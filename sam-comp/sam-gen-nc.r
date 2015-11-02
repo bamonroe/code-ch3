@@ -339,7 +339,9 @@ row.names(MM) <- 1:nrow(MM)
 
 plot(MM$rm,MM$M.WP)
 
-fname <- paste("Sam",S,"-sim",snum,"-",rm.min,rm.max,".Rda",sep="")
+
+aggdir <- "../data/aggdat/"
+fname <- paste(aggdir,"Agg",S,"-sim",snum,"-",rm.min,rm.max,".Rda",sep="")
 #fname <- paste("Test.Rda")
 save(MM,file=fname)
 print(fname)

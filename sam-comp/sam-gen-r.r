@@ -309,7 +309,11 @@ NN <- mclapply( Theta, getAgg,mc.cores=cores)
 NN <- do.call(rbind,NN)
 NN <- data.frame(NN)
 
-print(NN)
+aggdir <- "../data/aggdat/"
+fname <- paste(aggdir,"Agg",S,"-sim",snum,"-",rm.min,rm.max,".Rda",sep="")
+#fname <- paste("Test.Rda")
+save(MM,file=fname)
+print(fname)
 
 #save(MM,file=paste("Sam",S,"-sim",snum,".Rda",sep=""))
 

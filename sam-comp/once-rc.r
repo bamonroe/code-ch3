@@ -140,3 +140,8 @@ c(  M.EE=M.EE,
 	V.WE0=V.WE0,
 	rm,	rs,	um,	us)
 
+
+samdat <- "../data/samdat/"
+filename <- paste(samdat,"R",rm,"U",um,".Rda",sep="")
+save(D,file=filename)
+
