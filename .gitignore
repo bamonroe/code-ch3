@@ -1,0 +1,13 @@
+**.Rda
+**.Rdata
+**.dta
+**.Rhistory
+**.Rout
+**.pdf
+
+**/*.Rda
+**/*.Rdata
+**/*.dta
+**/*.Rhistory
+**/*.Rout
+**/*.pdf
