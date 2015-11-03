@@ -5,8 +5,8 @@ rm(list = ls())
 #Libraries
 library(microbenchmark)
 library(Rcpp)
-sourceCpp("~/code/Rcpp/halton.cpp")
-sourceCpp("~/code/Rcpp/GRDD.cpp")
+sourceCpp("../Rcpp/halton.cpp")
+sourceCpp("../Rcpp/GRDD.cpp")
 #sourceCpp("../Rcpp/DD.cpp")
 #halton(init,H,prime)
 
