@@ -21,22 +21,23 @@ IN   <- M0[which(M0$rm > (-1.7134 - sd.include*M0$rs) & M0$rm < (1.3684 + sd.inc
 OUT  <- M0[which(M0$rm < (-1.7134 + sd.include*M0$rs) | M0$rm > (1.3684 - sd.include*M0$rs )),]
 
 # Colors
-c  <-"#32b0e6" # Cyan
-yo <-"#e6c832" # Yellow Orange
-m  <-"#e63271" # Magenta
+cy  <-"#32b0e6" # Cyan
+yo  <-"#e6c832" # Yellow Orange
+ma  <-"#e63271" # Magenta
 
 # Text naming the data.frame to use
 USE <- "IN"
 
 # Reference point for scale
-mid <- (max(get(USE)$rs) - ((max(get(USE)$rs)-(min(get(USE)$rs)))/2))
-
+mid.ref <- (max(get(USE)$rs) - ((max(get(USE)$rs)-(min(get(USE)$rs)))/2))
+limits <- c(min(get(USE)$rs), max(get(USE)$rs))
+breaks <- c(limits[1],mid.ref,limits[2])
 
 # Skeleton
 p <- ggplot(data=get(USE), aes(x=rm))
 # Change scale stuff
-p <- p + scale_color_gradient2(low=c,mid=yo,high=m,midpoint=mid)
-p <- p + scale_fill_gradient2(low=c,mid=yo,high=m,midpoint=mid)
+p <- p + scale_color_gradientn(space="Lab",colours=c(cy,yo,ma),limits=limits,breaks=breaks)
+p <- p + scale_fill_gradientn(space="Lab",colours=c(cy,yo,ma),limits=limits,breaks=breaks)
 
 # Collect the plots
 rm.p <- list()
@@ -51,12 +52,14 @@ rm.p[["M.WE0"]] <- p + geom_point(shape=19, alpha=alph, aes(color=rs,fill=rs,y=M
 rm.p[["V.WE0"]] <- p + geom_point(shape=19, alpha=alph, aes(color=rs,fill=rs,y=V.WE0) )
 
 # Reference point for scale
-mid <- (max(get(USE)$rm) - ((max(get(USE)$rm)-(min(get(USE)$rm)))/2))
+mid.ref <- (max(get(USE)$rm) - ((max(get(USE)$rm)-(min(get(USE)$rm)))/2))
+limits <- c(min(get(USE)$rm), max(get(USE)$rm))
+breaks <- c(limits[1],mid.ref,limits[2])
 # Skeleton
 p <- ggplot(data=get(USE), aes(x=rs))
 # Change scale stuff
-p <- p + scale_color_gradient2(low=c,mid=yo,high=m,midpoint=mid)
-p <- p + scale_fill_gradient2(low=c,mid=yo,high=m,midpoint=mid)
+p <- p + scale_color_gradientn(space="Lab",colours=c(cy,yo,ma),limits=limits,breaks=breaks)
+p <- p + scale_fill_gradientn(space="Lab",colours=c(cy,yo,ma),limits=limits,breaks=breaks)
 
 # Collect the plots
 rs.p <- list()
@@ -71,13 +74,14 @@ rs.p[["M.WE0"]] <- p + geom_point(shape=19, alpha=alph, aes(color=rm,fill=rm,y=M
 rs.p[["V.WE0"]] <- p + geom_point(shape=19, alpha=alph, aes(color=rm,fill=rs,y=V.WE0) )
 
 # Reference point for scale
-mid <- (max(get(USE)$us) - ((max(get(USE)$us)-(min(get(USE)$us)))/2))
+mid.ref <- (max(get(USE)$us) - ((max(get(USE)$us)-(min(get(USE)$us)))/2))
+limits <- c(min(get(USE)$us), max(get(USE)$us))
+breaks <- c(limits[1],mid.ref,limits[2])
 # Skeleton
 p <- ggplot(data=get(USE), aes(x=um))
 # Change scale stuff
-p <- p + scale_color_gradient2(low=c,mid=yo,high=m,midpoint=mid)
-p <- p + scale_fill_gradient2(low=c,mid=yo,high=m,midpoint=mid)
-
+p <- p + scale_color_gradientn(space="Lab",colours=c(cy,yo,ma),limits=limits,breaks=breaks)
+p <- p + scale_fill_gradientn(space="Lab",colours=c(cy,yo,ma),limits=limits,breaks=breaks)
 # Collect the plots
 um.p <- list()
 
@@ -91,13 +95,14 @@ um.p[["M.WE0"]] <- p + geom_point(shape=19, alpha=alph, aes(color=us,fill=us,y=M
 um.p[["V.WE0"]] <- p + geom_point(shape=19, alpha=alph, aes(color=us,fill=us,y=V.WE0) )
 
 # Reference point for scale
-mid <- (max(get(USE)$um) - ((max(get(USE)$um)-(min(get(USE)$um)))/2))
+mid.ref <- (max(get(USE)$um) - ((max(get(USE)$um)-(min(get(USE)$um)))/2))
+limits <- c(min(get(USE)$um), max(get(USE)$um))
+breaks <- c(limits[1],mid.ref,limits[2])
 # Skeleton
 p <- ggplot(data=get(USE), aes(x=us))
 # Change scale stuff
-p <- p + scale_color_gradient2(low=c,mid=yo,high=m,midpoint=mid)
-p <- p + scale_fill_gradient2(low=c,mid=yo,high=m,midpoint=mid)
-
+p <- p + scale_color_gradientn(space="Lab",colours=c(cy,yo,ma),limits=limits,breaks=breaks)
+p <- p + scale_fill_gradientn(space="Lab",colours=c(cy,yo,ma),limits=limits,breaks=breaks)
 # Collect the plots
 us.p <- list()
 
