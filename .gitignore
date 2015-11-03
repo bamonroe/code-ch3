@@ -1,5 +1,6 @@
 **.Rda
 **.Rdata
+**.RData
 **.dta
 **.Rhistory
 **.Rout
@@ -7,6 +8,7 @@
 
 **/*.Rda
 **/*.Rdata
+**/*.RData
 **/*.dta
 **/*.Rhistory
 **/*.Rout
