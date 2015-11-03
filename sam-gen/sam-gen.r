@@ -130,18 +130,18 @@ V.WE0 <- sum(D$PC*(D$E.0 - M.WE0)^2)
 
 print(head(D,n=10))
 
-c(  M.EE=M.EE,
-	V.EE=V.EE,
-	M.WP=M.WP,
-	V.WP=V.WP,
-	M.WC=M.WC,
-	V.WC=V.WC,
-	M.WE0=M.WE0,
-	V.WE0=V.WE0,
-	rm,	rs,	um,	us)
+WW  <- c(M.EE=M.EE,
+			V.EE=V.EE,
+			M.WP=M.WP,
+			V.WP=V.WP,
+			M.WC=M.WC,
+			V.WC=V.WC,
+			M.WE0=M.WE0,
+			V.WE0=V.WE0)
 
+print(c(WW,rm=rm,rs=rs,um=um,us=us))
 
-samdat <- "../data/samdat/"
+samdat <- "../data/sam-dat/"
 filename <- paste(samdat,"R",rm,"U",um,".Rda",sep="")
 save(D,file=filename)
 

@@ -257,4 +257,8 @@ WW  <- c(M.EE=M.EE,
 			M.WE0=M.WE0,
 			V.WE0=V.WE0)
 
-c(WW,rm=rm,rs=rs,um=um,us=us)
+print(c(WW,rm=rm,rs=rs,um=um,us=us))
+
+samdat <- "../data/sam-dat/"
+filename <- paste(samdat,"R",rm,"U",um,".Rda",sep="")
+save(D,file=filename)
