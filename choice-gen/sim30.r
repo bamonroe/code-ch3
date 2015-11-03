@@ -108,7 +108,9 @@ rand <- runif(nrow(D))
 # statement.
 D$c <- ifelse(D$pA > rand, 0, 1)
 
-save(D ,file="choice30.Rda")
+choicedat <- "../data/choice-dat/"
+fname <- paste(choicedat,"choice30.Rda",sep="")
+save(D ,file=fname)
 
 # Dataset is generated, call the file that does ML estimation.
 #source("ML.r", echo=TRUE,print.eval=TRUE)

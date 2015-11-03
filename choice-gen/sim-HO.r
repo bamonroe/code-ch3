@@ -109,7 +109,11 @@ rand <- runif(nrow(D))
 # statement.
 D$c <- ifelse(D$pA > rand, 0, 1)
 
+
 save(D ,file="HO.Rda")
+choicedat <- "../data/choice-dat/"
+fname <- paste(choicedat,"choice-HO.Rda",sep="")
+save(D ,file=fname)
 
 head(D,n=nrow(d))
 
