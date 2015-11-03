@@ -8,7 +8,7 @@ library(np)
 load("../data/agg-dat/Agg1Mil-S10k.Rda")
 
 sam <- runif(nrow(MM))
-sam.prop <- .1
+sam.prop <- 1
 sam <- sam < sam.prop
 
 M0 <- MM[which(sam),]
@@ -44,6 +44,7 @@ pur <- "#b941ff"
 color.3 <- c(cy,yo,ma)
 # 4 tone colors
 color.4 <- c(lcy,dyo,pur,ye)
+
 
 # Colors to use
 colors <- color.4
