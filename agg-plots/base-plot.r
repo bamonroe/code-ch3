@@ -1,7 +1,6 @@
 library(np)
 
-#load("Sam1500000-sim1000--0.21.3.Rda")
-load("../data/agg-dat/Test.Rda")
+load("../data/agg-dat/Agg30k-S500.Rda")
 # Multiple Linear Regression  on the row 6-7 in depth
 
 
