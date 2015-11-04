@@ -3,11 +3,13 @@ rm(list=ls())
 
 library(ggplot2)
 library(reshape2)
+library(parallel)
+
+cores <- detectCores()
 
 ## Haven't use, but will likely use
 library(gridExtra)
 library(np)
-
 
 # Grab our data
 load("../data/agg-dat/Agg1Mil-S10k.Rda")
@@ -24,7 +26,7 @@ sd.include <- 0
 
 # Functionally determine the alpha channel for the points
 alph <- (1 / (exp(sam.prop))) 
-alph <- .1
+#alph <- .1
 
 # Bounds for the means of data
 lbound <- -1.7134
@@ -114,5 +116,35 @@ for(i in 1:length(names)){
 	p.v[[names[i]]] <- p.v[[names[i]]] + geom_point(shape=shape, alpha=alph, aes_string(y="value",color=s.names[i],fill=s.names[i]) )
 	p.v[[names[i]]] <- p.v[[names[i]]] + facet_wrap( facets=~variable, scale="free_y")
 
+
+
 }
+
+
+save.scale <- 3
+
+# Save plots
+saver <- function(pt) {
+
+	p.t  <- pt[1]
+	name <- pt[2]
+
+	# Diminetions of plots
+	w <- 6.92
+	h <- (9.42/2) - .25
+
+	fname <- paste("../data/agg-plots/",p.t,"-",name,".png",sep="")
+
+	ggsave(filename=fname, plot=get(as.character(pt[1]))[[as.character(pt[2])]], width=w, height=h, units="in",scale=save.scale )
+
+}
+
+p.types <- c( rep("p.m",length(names)), rep("p.v",length(names)) )
+p.types <- rbind(p.types , rep(names,2) )
+p.types <- data.frame(p.types)
+
+rm(IN,OUT,M0,MM,USE.m,USE.s)
+
+mclapply(p.types,saver,mc.cores=cores)
+#lapply(p.types,saver)
 
