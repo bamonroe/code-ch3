@@ -16,7 +16,7 @@ load("../data/agg-dat/Agg1Mil-S10k.Rda")
 
 # Don't always want to use it all, there is tons of data
 sam <- runif(nrow(MM))
-sam.prop <- 1
+sam.prop <- .1
 sam <- sam < sam.prop
 
 M0 <- MM[which(sam),]
@@ -77,7 +77,7 @@ color.4.4 <- c(dyo,cy,yo,pur)
 colors <- color.4.4
 
 # Shape of the points
-shape <- 19
+shape <- 1
 
 # Faceting, 
 USE.m <- melt(get(USE), measure.vars=c("M.WP","M.WC","M.EE","M.WE0") )
@@ -102,7 +102,10 @@ for(i in 1:length(names)){
 	bbr <- mid.ref - q.dist
 	tbr <- mid.ref + q.dist
 
-	breaks <- c(limits[1],bbr,mid.ref,tbr,limits[2])
+	breaks <- c(bbr,mid.ref,tbr,limits[2])
+	breaks <- floor(breaks * 100) / 100
+	ll <- ceiling(limits[1]*100)/100
+	breaks <- c(ll,breaks)
 
 	# Plot the means
 	p.m[[names[i]]] <- ggplot(data=USE.m, aes_string(x=names[i]))
@@ -112,16 +115,28 @@ for(i in 1:length(names)){
 
 	# Plot the variances
 	p.v[[names[i]]] <- ggplot(data=USE.s, aes_string(x=names[i]))
-	p.v[[names[i]]] <- p.v[[names[i]]] + scale_color_gradientn(space="Lab",colours=colors,limits=limits,breaks=breaks) + scale_fill_gradientn(space="Lab",colours=colors,limits=limits,breaks=breaks)
-	p.v[[names[i]]] <- p.v[[names[i]]] + geom_point(shape=shape, alpha=alph, aes_string(y="value",color=s.names[i],fill=s.names[i]) )
 	p.v[[names[i]]] <- p.v[[names[i]]] + facet_wrap( facets=~variable, scale="free_y")
+	p.v[[names[i]]] <- p.v[[names[i]]] + 
+		
+		scale_color_gradientn(space="Lab",colours=colors,limits=limits,breaks=breaks) + 
+		
+		
+		scale_fill_gradientn(space="Lab",colours=colors,limits=limits,breaks=breaks,
+						guide = guide_legend(title = "Legend title", title.position = NULL, title.theme = NULL, title.hjust = NULL, 
+										title.vjust = NULL, label = TRUE, label.position = NULL, label.theme = NULL, 
+										label.hjust = NULL, label.vjust = NULL, keywidth = NULL, keyheight = NULL, direction = NULL, 
+										default.unit = "line", override.aes = list(), nrow = 1, ncol = NULL, byrow = TRUE, 
+										reverse = FALSE, order = 0 )
+						)
+
+	p.v[[names[i]]] <- p.v[[names[i]]] + geom_point(shape=shape, alpha=alph, aes_string(y="value",color=s.names[i],fill=s.names[i]) )
+
+
 
 
 
 }
 
-
-save.scale <- 3
 
 # Save plots
 saver <- function(pt) {
@@ -132,6 +147,8 @@ saver <- function(pt) {
 	# Diminetions of plots
 	w <- 6.92
 	h <- (9.42/2) - .25
+
+	save.scale <- 3
 
 	fname <- paste("../data/agg-plots/",p.t,"-",name,".png",sep="")
 
@@ -145,6 +162,6 @@ p.types <- data.frame(p.types)
 
 rm(IN,OUT,M0,MM,USE.m,USE.s)
 
-mclapply(p.types,saver,mc.cores=cores)
+#mclapply(p.types,saver,mc.cores=cores)
 #lapply(p.types,saver)
 
