@@ -17,7 +17,7 @@ load("../data/agg-dat/Agg1Mil-S10k.Rda")
 
 # Don't always want to use it all, there is tons of data
 sam <- runif(nrow(MM))
-sam.prop <- 1
+sam.prop <- .01
 sam <- sam < sam.prop
 
 M0 <- MM[which(sam),]
@@ -143,15 +143,18 @@ getPlotted <- function(plot){
 
 
 	# Values for the various plots
+	title <- "This is a title\n\n\n"
 
 	leg.title.size  <- 22
-	leg.title.vjust <- 0
+	leg.title.vjust <- -100
 
 	leg.text.size   <- 14
 	leg.text.angle  <- 45
-	leg.position    <- "top"
-	leg.key.height  <- .25
-	leg.key.width   <- 1
+	leg.position    <- "right"
+	leg.direction	<- "horizontal"
+	leg.direction	<- "vertical"
+	leg.key.height  <- 1
+	leg.key.width   <- .25
 
 	x.title <- ifelse(x.par=="rm", "Mean of CRRA",
 			   ifelse(x.par=="rs", "Standard Deviation of CRRA",
@@ -172,15 +175,16 @@ getPlotted <- function(plot){
 	  	      scale_fill_gradientn(name=leg.title,space="Lab",colours=colors,limits=limits,breaks=breaks)
 	p <- p + geom_point(shape=shape, alpha=alph, aes_string(y="value",color=s.par,fill=s.par) )
 	p <- p + facet_wrap( facets=~variable, ncol=2, scale="free_y")
-	p <- p + labs(x=x.title,y=NULL)
-	p <- p + theme(legend.title=element_text(size=leg.title.size,vjust=leg.title.vjust),
-											   legend.text=element_text(size=leg.text.size,angle=leg.text.angle),
-											   legend.position=leg.position,
-											   legend.key.height=unit(leg.key.height,"in"),
-											   legend.key.width=unit(leg.key.width,"in"),
-											   axis.title.x=element_text(size=x.title.size),
-											   strip.text=element_text(size=fac.size)
-											   )
+	p <- p + labs(title=title,x=x.title,y=NULL)
+	p <- p + theme(legend.title=element_text(size=leg.title.size,vjust=.9),
+					legend.text=element_text(size=leg.text.size,angle=leg.text.angle),
+					legend.position=leg.position,
+					legend.direction=leg.direction,
+					legend.key.height=unit(leg.key.height,"in"),
+					legend.key.width=unit(leg.key.width,"in"),
+					axis.title.x=element_text(size=x.title.size),
+					strip.text=element_text(size=fac.size)
+					)
 
 	# Return the plot to the list
 	dat <- ifelse(data=="USE.w","Wel","Err")
@@ -193,14 +197,15 @@ getPlotted <- function(plot){
 
 	save.scale <- 3
 
-	fname <- paste("../data/agg-plots/",dat,"-",x.par,".png",sep="")
+	fname <- paste("../data/agg-plots/",dat,"-",x.par,".jpg",sep="")
 
-	ggsave(filename=fname, plot=p, width=w, height=h, units="in",scale=save.scale )
+	#ggsave(filename=fname, plot=p, width=w, height=h, units="in",scale=save.scale )
 
 	return(ret)
 
 }
 
 plots <- mclapply(to.plot,getPlotted,mc.cores=cores)
+#plots <- lapply(to.plot,getPlotted)
 
 
