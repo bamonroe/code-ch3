@@ -27,7 +27,7 @@ sd.include <- 0
 
 # Functionally determine the alpha channel for the points
 alph <- (1 / (exp(sam.prop))) 
-alph <- .4
+alph <- .35
 
 # Bounds for the means of data
 lbound <- -1.7134
@@ -81,40 +81,55 @@ colors <- color.4.4
 shape <- 20
 
 # Faceting, 
-USE.m <- melt(get(USE), measure.vars=c("M.WP","V.WP","M.WC","V.WC","M.EE","V.EE","M.WE0","V.WE0") )
+USE.w <- melt(get(USE), measure.vars=c("M.WP","V.WP","M.WC","V.WC") )
+USE.e <- melt(get(USE), measure.vars=c("M.EE","V.EE","M.WE0","V.WE0") )
 
-USE.m$variable  <-  ifelse(USE.m$variable == "M.WP" , "Mean Expected Welfare Proportion",
-					ifelse(USE.m$variable == "M.WC" , "Mean Expected Welfare Surplus",
-					ifelse(USE.m$variable == "M.EE" , "Mean Expected Errors",
-					ifelse(USE.m$variable == "M.WE0", "Mean Expected Zero Errors",
-					ifelse(USE.m$variable == "V.WP" , "Variance of Expected Welfare Proportion",
-					ifelse(USE.m$variable == "V.WC" , "Variance of Expected Welfare Surplus",
-					ifelse(USE.m$variable == "V.EE" , "Variance of Expected Errors","Variance of Expected Zero Errors")
-					))))))
+USE.w$variable  <-  ifelse(USE.w$variable == "M.WP" , "Mean Expected Welfare Proportion",
+					ifelse(USE.w$variable == "V.WP" , "Variance of Expected Welfare Proportion",
+					ifelse(USE.w$variable == "M.WC" , "Mean Expected Welfare Surplus",
+													  "Variance of Expected Welfare Surplus")
+					))
 
-USE.m$variable <- factor(USE.m$variable, levels=c(	"Mean Expected Welfare Proportion",                              											  
+USE.e$variable  <-  ifelse(USE.e$variable == "M.EE" , "Mean Expected Number of Errors",
+					ifelse(USE.e$variable == "V.EE" , "Variance of Expected Number of Errors",
+					ifelse(USE.e$variable == "M.WE0", "Mean Expected Proportion of No Error Choices",
+													  "Variance of Expected Proportion of No Error Choices")
+					))
+
+
+USE.w$variable <- factor(USE.w$variable, levels=c(	"Mean Expected Welfare Proportion",                              											  
 													"Variance of Expected Welfare Proportion",
 													"Mean Expected Welfare Surplus",
-													"Variance of Expected Welfare Surplus",
-													"Mean Expected Errors",
-													"Variance of Expected Errors",
-													"Mean Expected Zero Errors",
-													"Variance of Expected Zero Errors"))
+													"Variance of Expected Welfare Surplus"))
 
+USE.e$variable <- factor(USE.e$variable, levels=c(	"Mean Expected Number of Errors",
+													"Variance of Expected Number of Errors",
+													"Mean Expected Proportion of No Error Choices",
+													"Variance of Expected Proportion of No Error Choices"))
+													
 
 # What are the parameter names
-names <- c("rm","rs","um","us")
+names   <- c("rm","rs","um","us")
 s.names <- c("rs","rm","us","um")
 
-# Make a list to hold the plots for means
-p.m <- list()
-p.v <- list()
+names   <- rep(names,2)
+s.names <- rep(s.names,2)
 
-for(i in 1:length(names)){
+p.t <- c(rep("USE.e",4),rep("USE.w",4))
+
+to.plot <- data.frame(rbind(names,s.names,p.t))
+
+getPlotted <- function(plot){
     
+    x.par <- as.character(plot[1])
+    s.par <- as.character(plot[2])
+    data  <- as.character(plot[3])
+
+    print(plot)
+
 	# Reference point for scale
-	mid.ref <- (max(USE.m[[s.names[i]]]) - ((max(USE.m[[s.names[i]]])-(min(USE.m[[s.names[i]]])))/2))
-	limits <- c(min(USE.m[[s.names[i]]]), max(USE.m[[s.names[i]]]))
+	mid.ref <- (max(get(data)[[s.par]]) - ((max(get(data)[[s.par]])-(min(get(data)[[s.par]])))/2))
+	limits <- c(min(get(data)[[s.par]]), max(get(data)[[s.par]]))
 
 	q.dist <- (limits[2] - mid.ref) / 2
 
@@ -138,29 +153,27 @@ for(i in 1:length(names)){
 	leg.key.height  <- .25
 	leg.key.width   <- 1
 
-	x.title <- ifelse(names[i]=="rm", "Mean of CRRA",
-			   ifelse(names[i]=="rs", "Standard Deviation of CRRA",
-			   ifelse(names[i]=="um", "Mean of Lambda","Standard Deviation of Lamda")))
+	x.title <- ifelse(x.par=="rm", "Mean of CRRA",
+			   ifelse(x.par=="rs", "Standard Deviation of CRRA",
+			   ifelse(x.par=="um", "Mean of Lambda","Standard Deviation of Lamda")))
 
 	x.title.size <- 24
 
 
-	leg.title <- ifelse(s.names[i]=="rm", "Mean of CRRA",
-                 ifelse(s.names[i]=="rs", "Standard Deviation\n of CRRA",
-                 ifelse(s.names[i]=="um", "Mean of Lambda","Standard Deviation\n of Lamda")))
-
+	leg.title <- ifelse(s.par=="rm", "Mean of CRRA",
+                 ifelse(s.par=="rs", "Standard Deviation of CRRA",
+                 ifelse(s.par=="um", "Mean of Lambda","Standard Deviation of Lamda")))
 
 	fac.size <- 24
 
-
-	# Plot the means
-	p.m[[names[i]]] <- ggplot(data=USE.m, aes_string(x=names[i]))
-	p.m[[names[i]]] <- p.m[[names[i]]] + scale_color_gradientn(name=leg.title,space="Lab",colours=colors,limits=limits,breaks=breaks) + 
-										  scale_fill_gradientn(name=leg.title,space="Lab",colours=colors,limits=limits,breaks=breaks)
-	p.m[[names[i]]] <- p.m[[names[i]]] + geom_point(shape=shape, alpha=alph, aes_string(y="value",color=s.names[i],fill=s.names[i]) )
-	p.m[[names[i]]] <- p.m[[names[i]]] + facet_wrap( facets=~variable, ncol=2, scale="free_y")
-	p.m[[names[i]]] <- p.m[[names[i]]] + labs(x=x.title,y=NULL)
-	p.m[[names[i]]] <- p.m[[names[i]]] + theme(legend.title=element_text(size=leg.title.size,vjust=leg.title.vjust),
+	# gather the plot layers
+	p <- ggplot(data=get(data), aes_string(x=x.par))
+	p <- p + scale_color_gradientn(name=leg.title,space="Lab",colours=colors,limits=limits,breaks=breaks) + 
+	  	      scale_fill_gradientn(name=leg.title,space="Lab",colours=colors,limits=limits,breaks=breaks)
+	p <- p + geom_point(shape=shape, alpha=alph, aes_string(y="value",color=s.par,fill=s.par) )
+	p <- p + facet_wrap( facets=~variable, ncol=2, scale="free_y")
+	p <- p + labs(x=x.title,y=NULL)
+	p <- p + theme(legend.title=element_text(size=leg.title.size,vjust=leg.title.vjust),
 											   legend.text=element_text(size=leg.text.size,angle=leg.text.angle),
 											   legend.position=leg.position,
 											   legend.key.height=unit(leg.key.height,"in"),
@@ -169,30 +182,25 @@ for(i in 1:length(names)){
 											   strip.text=element_text(size=fac.size)
 											   )
 
-}
+	# Return the plot to the list
+	dat <- ifelse(data=="USE.w","Wel","Err")
 
-
-# Save plots
-saver <- function(name) {
+	ret <- list(x.par,dat,p)
 
 	# Diminetions of plots
-	w <- 6.92
-	h <- 9.42 - .5
+	h <- 8.50 - (.79*2) - .5	# Page is 8.5 x 11 inches, margins are .79 inches
+	w <- 11.0 - (.79*2)
 
 	save.scale <- 3
 
-	fname <- paste("../data/agg-plots/p-",name,".png",sep="")
+	fname <- paste("../data/agg-plots/",dat,"-",x.par,".png",sep="")
 
-	ggsave(filename=fname, plot=p.m[[as.character(name)]], width=w, height=h, units="in",scale=save.scale )
+	ggsave(filename=fname, plot=p, width=w, height=h, units="in",scale=save.scale )
+
+	return(ret)
 
 }
 
-p.types <- c( rep("pm",length(names)), rep("p.v",length(names)) )
-p.types <- rbind(p.types , rep(names,2) )
-p.types <- data.frame(p.types)
+plots <- mclapply(to.plot,getPlotted,mc.cores=cores)
 
-rm(IN,OUT,M0,MM,USE.m)
-
-mclapply(names,saver,mc.cores=cores)
-#lapply(names,saver)
 
