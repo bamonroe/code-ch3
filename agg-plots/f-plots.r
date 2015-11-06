@@ -17,7 +17,7 @@ load("../data/agg-dat/Agg1Mil-S10k.Rda")
 
 # Don't always want to use it all, there is tons of data
 sam <- runif(nrow(MM))
-sam.prop <- .01
+sam.prop <- 1
 sam <- sam < sam.prop
 
 M0 <- MM[which(sam),]
@@ -81,23 +81,25 @@ colors <- color.4.4
 shape <- 20
 
 # Faceting, 
-USE.m <- melt(get(USE), measure.vars=c("M.WP","M.WC","M.EE","M.WE0") )
-USE.s <- melt(get(USE), measure.vars=c("V.WP","V.WC","V.EE","V.WE0") )
+USE.m <- melt(get(USE), measure.vars=c("M.WP","V.WP","M.WC","V.WC","M.EE","V.EE","M.WE0","V.WE0") )
 
 USE.m$variable  <-  ifelse(USE.m$variable == "M.WP" , "Mean Expected Welfare Proportion",
 					ifelse(USE.m$variable == "M.WC" , "Mean Expected Welfare Surplus",
 					ifelse(USE.m$variable == "M.EE" , "Mean Expected Errors",
-					ifelse(USE.m$variable == "M.EE" , "Mean Expected Errors",
-					ifelse(USE.m$variable == "M.WE0", "Mean Expected Zero Errors",USE.m$variable)
-					))))
+					ifelse(USE.m$variable == "M.WE0", "Mean Expected Zero Errors",
+					ifelse(USE.m$variable == "V.WP" , "Variance of Expected Welfare Proportion",
+					ifelse(USE.m$variable == "V.WC" , "Variance of Expected Welfare Surplus",
+					ifelse(USE.m$variable == "V.EE" , "Variance of Expected Errors","Variance of Expected Zero Errors")
+					))))))
 
-USE.s$variable  <-  ifelse(USE.s$variable == "V.WP" , "Variance of Expected Welfare Proportion",
-					ifelse(USE.s$variable == "V.WC" , "Variance of Expected Welfare Surplus",
-					ifelse(USE.s$variable == "V.EE" , "Variance of Expected Errors",
-					ifelse(USE.s$variable == "V.EE" , "Variance of Expected Errors",
-					ifelse(USE.s$variable == "V.WE0", "Variance of Expected Zero Errors",USE.s$variable)
-					))))
-
+USE.m$variable <- factor(USE.m$variable, levels=c(	"Mean Expected Welfare Proportion",                              											  
+													"Variance of Expected Welfare Proportion",
+													"Mean Expected Welfare Surplus",
+													"Variance of Expected Welfare Surplus",
+													"Mean Expected Errors",
+													"Variance of Expected Errors",
+													"Mean Expected Zero Errors",
+													"Variance of Expected Zero Errors"))
 
 
 # What are the parameter names
@@ -156,7 +158,7 @@ for(i in 1:length(names)){
 	p.m[[names[i]]] <- p.m[[names[i]]] + scale_color_gradientn(name=leg.title,space="Lab",colours=colors,limits=limits,breaks=breaks) + 
 										  scale_fill_gradientn(name=leg.title,space="Lab",colours=colors,limits=limits,breaks=breaks)
 	p.m[[names[i]]] <- p.m[[names[i]]] + geom_point(shape=shape, alpha=alph, aes_string(y="value",color=s.names[i],fill=s.names[i]) )
-	p.m[[names[i]]] <- p.m[[names[i]]] + facet_wrap( facets=~variable, scale="free_y")
+	p.m[[names[i]]] <- p.m[[names[i]]] + facet_wrap( facets=~variable, ncol=2, scale="free_y")
 	p.m[[names[i]]] <- p.m[[names[i]]] + labs(x=x.title,y=NULL)
 	p.m[[names[i]]] <- p.m[[names[i]]] + theme(legend.title=element_text(size=leg.title.size,vjust=leg.title.vjust),
 											   legend.text=element_text(size=leg.text.size,angle=leg.text.angle),
@@ -167,49 +169,30 @@ for(i in 1:length(names)){
 											   strip.text=element_text(size=fac.size)
 											   )
 
-	# Plot the variances
-	p.v[[names[i]]] <- ggplot(data=USE.s, aes_string(x=names[i]))
-	p.v[[names[i]]] <- p.v[[names[i]]] + scale_color_gradientn(name=leg.title,space="Lab",colours=colors,limits=limits,breaks=breaks) + 
-										  scale_fill_gradientn(name=leg.title,space="Lab",colours=colors,limits=limits,breaks=breaks)
-	p.v[[names[i]]] <- p.v[[names[i]]] + geom_point(shape=shape, alpha=alph, aes_string(y="value",color=s.names[i],fill=s.names[i]) )
-	p.v[[names[i]]] <- p.v[[names[i]]] + facet_wrap( facets=~variable, scale="free_y")
-	p.v[[names[i]]] <- p.v[[names[i]]] + labs(x=x.title,y=NULL)
-	p.v[[names[i]]] <- p.v[[names[i]]] + theme(legend.title=element_text(size=leg.title.size,vjust=leg.title.vjust),
-											   legend.text=element_text(size=leg.text.size,angle=leg.text.angle),
-											   legend.key.height=unit(leg.key.height,"in"),
-											   legend.key.width=unit(leg.key.width,"in"),
-											   legend.position=leg.position,
-											   axis.title.x=element_text(size=x.title.size),
-											   strip.text=element_text(size=fac.size)
-											   )
-
 }
 
 
 # Save plots
-saver <- function(pt) {
-
-	p.t  <- pt[1]
-	name <- pt[2]
+saver <- function(name) {
 
 	# Diminetions of plots
 	w <- 6.92
-	h <- (9.42/2) - .25
+	h <- 9.42 - .5
 
 	save.scale <- 3
 
-	fname <- paste("../data/agg-plots/",p.t,"-",name,".png",sep="")
+	fname <- paste("../data/agg-plots/p-",name,".png",sep="")
 
-	ggsave(filename=fname, plot=get(as.character(pt[1]))[[as.character(pt[2])]], width=w, height=h, units="in",scale=save.scale )
+	ggsave(filename=fname, plot=p.m[[as.character(name)]], width=w, height=h, units="in",scale=save.scale )
 
 }
 
-p.types <- c( rep("p.m",length(names)), rep("p.v",length(names)) )
+p.types <- c( rep("pm",length(names)), rep("p.v",length(names)) )
 p.types <- rbind(p.types , rep(names,2) )
 p.types <- data.frame(p.types)
 
-#rm(IN,OUT,M0,MM,USE.m,USE.s)
+rm(IN,OUT,M0,MM,USE.m)
 
-mclapply(p.types,saver,mc.cores=cores)
-#lapply(p.types,saver)
+mclapply(names,saver,mc.cores=cores)
+#lapply(names,saver)
 
