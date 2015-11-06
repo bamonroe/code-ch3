@@ -2,6 +2,7 @@
 rm(list=ls())
 
 library(ggplot2)
+library(grid)
 library(reshape2)
 library(parallel)
 
@@ -16,7 +17,7 @@ load("../data/agg-dat/Agg1Mil-S10k.Rda")
 
 # Don't always want to use it all, there is tons of data
 sam <- runif(nrow(MM))
-sam.prop <- .1
+sam.prop <- .01
 sam <- sam < sam.prop
 
 M0 <- MM[which(sam),]
@@ -26,7 +27,7 @@ sd.include <- 0
 
 # Functionally determine the alpha channel for the points
 alph <- (1 / (exp(sam.prop))) 
-#alph <- .1
+alph <- .4
 
 # Bounds for the means of data
 lbound <- -1.7134
@@ -77,11 +78,27 @@ color.4.4 <- c(dyo,cy,yo,pur)
 colors <- color.4.4
 
 # Shape of the points
-shape <- 1
+shape <- 20
 
 # Faceting, 
 USE.m <- melt(get(USE), measure.vars=c("M.WP","M.WC","M.EE","M.WE0") )
 USE.s <- melt(get(USE), measure.vars=c("V.WP","V.WC","V.EE","V.WE0") )
+
+USE.m$variable  <-  ifelse(USE.m$variable == "M.WP" , "Mean Expected Welfare Proportion",
+					ifelse(USE.m$variable == "M.WC" , "Mean Expected Welfare Surplus",
+					ifelse(USE.m$variable == "M.EE" , "Mean Expected Errors",
+					ifelse(USE.m$variable == "M.EE" , "Mean Expected Errors",
+					ifelse(USE.m$variable == "M.WE0", "Mean Expected Zero Errors",USE.m$variable)
+					))))
+
+USE.s$variable  <-  ifelse(USE.s$variable == "V.WP" , "Variance of Expected Welfare Proportion",
+					ifelse(USE.s$variable == "V.WC" , "Variance of Expected Welfare Surplus",
+					ifelse(USE.s$variable == "V.EE" , "Variance of Expected Errors",
+					ifelse(USE.s$variable == "V.EE" , "Variance of Expected Errors",
+					ifelse(USE.s$variable == "V.WE0", "Variance of Expected Zero Errors",USE.s$variable)
+					))))
+
+
 
 # What are the parameter names
 names <- c("rm","rs","um","us")
@@ -107,33 +124,64 @@ for(i in 1:length(names)){
 	ll <- ceiling(limits[1]*100)/100
 	breaks <- c(ll,breaks)
 
+
+	# Values for the various plots
+
+	leg.title.size  <- 22
+	leg.title.vjust <- 0
+
+	leg.text.size   <- 14
+	leg.text.angle  <- 45
+	leg.position    <- "top"
+	leg.key.height  <- .25
+	leg.key.width   <- 1
+
+	x.title <- ifelse(names[i]=="rm", "Mean of CRRA",
+			   ifelse(names[i]=="rs", "Standard Deviation of CRRA",
+			   ifelse(names[i]=="um", "Mean of Lambda","Standard Deviation of Lamda")))
+
+	x.title.size <- 24
+
+
+	leg.title <- ifelse(s.names[i]=="rm", "Mean of CRRA",
+                 ifelse(s.names[i]=="rs", "Standard Deviation\n of CRRA",
+                 ifelse(s.names[i]=="um", "Mean of Lambda","Standard Deviation\n of Lamda")))
+
+
+	fac.size <- 24
+
+
 	# Plot the means
 	p.m[[names[i]]] <- ggplot(data=USE.m, aes_string(x=names[i]))
-	p.m[[names[i]]] <- p.m[[names[i]]] + scale_color_gradientn(space="Lab",colours=colors,limits=limits,breaks=breaks) + scale_fill_gradientn(space="Lab",colours=colors,limits=limits,breaks=breaks)
+	p.m[[names[i]]] <- p.m[[names[i]]] + scale_color_gradientn(name=leg.title,space="Lab",colours=colors,limits=limits,breaks=breaks) + 
+										  scale_fill_gradientn(name=leg.title,space="Lab",colours=colors,limits=limits,breaks=breaks)
 	p.m[[names[i]]] <- p.m[[names[i]]] + geom_point(shape=shape, alpha=alph, aes_string(y="value",color=s.names[i],fill=s.names[i]) )
 	p.m[[names[i]]] <- p.m[[names[i]]] + facet_wrap( facets=~variable, scale="free_y")
+	p.m[[names[i]]] <- p.m[[names[i]]] + labs(x=x.title,y=NULL)
+	p.m[[names[i]]] <- p.m[[names[i]]] + theme(legend.title=element_text(size=leg.title.size,vjust=leg.title.vjust),
+											   legend.text=element_text(size=leg.text.size,angle=leg.text.angle),
+											   legend.position=leg.position,
+											   legend.key.height=unit(leg.key.height,"in"),
+											   legend.key.width=unit(leg.key.width,"in"),
+											   axis.title.x=element_text(size=x.title.size),
+											   strip.text=element_text(size=fac.size)
+											   )
 
 	# Plot the variances
 	p.v[[names[i]]] <- ggplot(data=USE.s, aes_string(x=names[i]))
-	p.v[[names[i]]] <- p.v[[names[i]]] + facet_wrap( facets=~variable, scale="free_y")
-	p.v[[names[i]]] <- p.v[[names[i]]] + 
-		
-		scale_color_gradientn(space="Lab",colours=colors,limits=limits,breaks=breaks) + 
-		
-		
-		scale_fill_gradientn(space="Lab",colours=colors,limits=limits,breaks=breaks,
-						guide = guide_legend(title = "Legend title", title.position = NULL, title.theme = NULL, title.hjust = NULL, 
-										title.vjust = NULL, label = TRUE, label.position = NULL, label.theme = NULL, 
-										label.hjust = NULL, label.vjust = NULL, keywidth = NULL, keyheight = NULL, direction = NULL, 
-										default.unit = "line", override.aes = list(), nrow = 1, ncol = NULL, byrow = TRUE, 
-										reverse = FALSE, order = 0 )
-						)
-
+	p.v[[names[i]]] <- p.v[[names[i]]] + scale_color_gradientn(name=leg.title,space="Lab",colours=colors,limits=limits,breaks=breaks) + 
+										  scale_fill_gradientn(name=leg.title,space="Lab",colours=colors,limits=limits,breaks=breaks)
 	p.v[[names[i]]] <- p.v[[names[i]]] + geom_point(shape=shape, alpha=alph, aes_string(y="value",color=s.names[i],fill=s.names[i]) )
-
-
-
-
+	p.v[[names[i]]] <- p.v[[names[i]]] + facet_wrap( facets=~variable, scale="free_y")
+	p.v[[names[i]]] <- p.v[[names[i]]] + labs(x=x.title,y=NULL)
+	p.v[[names[i]]] <- p.v[[names[i]]] + theme(legend.title=element_text(size=leg.title.size,vjust=leg.title.vjust),
+											   legend.text=element_text(size=leg.text.size,angle=leg.text.angle),
+											   legend.key.height=unit(leg.key.height,"in"),
+											   legend.key.width=unit(leg.key.width,"in"),
+											   legend.position=leg.position,
+											   axis.title.x=element_text(size=x.title.size),
+											   strip.text=element_text(size=fac.size)
+											   )
 
 }
 
@@ -160,8 +208,8 @@ p.types <- c( rep("p.m",length(names)), rep("p.v",length(names)) )
 p.types <- rbind(p.types , rep(names,2) )
 p.types <- data.frame(p.types)
 
-rm(IN,OUT,M0,MM,USE.m,USE.s)
+#rm(IN,OUT,M0,MM,USE.m,USE.s)
 
-#mclapply(p.types,saver,mc.cores=cores)
+mclapply(p.types,saver,mc.cores=cores)
 #lapply(p.types,saver)
 
