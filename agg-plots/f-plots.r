@@ -125,8 +125,6 @@ getPlotted <- function(plot){
     s.par <- as.character(plot[2])
     data  <- as.character(plot[3])
 
-    print(plot)
-
 	# Reference point for scale
 	mid.ref <- (max(get(data)[[s.par]]) - ((max(get(data)[[s.par]])-(min(get(data)[[s.par]])))/2))
 	limits <- c(min(get(data)[[s.par]]), max(get(data)[[s.par]]))
@@ -189,7 +187,9 @@ getPlotted <- function(plot){
 	# Return the plot to the list
 	dat <- ifelse(data=="USE.w","Wel","Err")
 
-	ret <- list(x.par,dat,p)
+	name <- paste(x.par,"-",dat,sep="")
+
+	ret <- c(name=list(x.par,dat,p))
 
 	# Diminetions of plots
 	h <- 8.50 - (.79*2) - .5	# Page is 8.5 x 11 inches, margins are .79 inches
@@ -199,7 +199,7 @@ getPlotted <- function(plot){
 
 	fname <- paste("../data/agg-plots/",dat,"-",x.par,".jpg",sep="")
 
-	#ggsave(filename=fname, plot=p, width=w, height=h, units="in",scale=save.scale )
+#	ggsave(filename=fname, plot=p, width=w, height=h, units="in",scale=save.scale )
 
 	return(ret)
 
