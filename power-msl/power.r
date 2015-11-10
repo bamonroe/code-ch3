@@ -4,6 +4,10 @@ rm(list=ls())
 
 #libraries
 library(Rcpp)
+library(parallel)
+library(microbenchmark)
+
+cores <- detectCores()
 
 # Source the cpp stuff
 sourceCpp("../Rcpp/halton.cpp")
@@ -187,8 +191,8 @@ pB0 <- seq(from=0.9, to=0, by= -.1)
 pA1 <- seq(from=0.1, to=1, by= .1)
 pB1 <- seq(from=0.1, to=1, by= .1)
 
-A <- matrix(c(A0,A1),nrow=1,byrow=T)
-B <- matrix(c(B0,B1),nrow=1,byrow=T)
+A <- matrix(c(A0,A1),nrow=10,ncol=2,byrow=T)
+B <- matrix(c(B0,B1),nrow=10,ncol=2,byrow=T)
 
 pA <- matrix(c(pA0,pA1),ncol=2,nrow=10,byrow=F)
 pB <- matrix(c(pB0,pB1),ncol=2,nrow=10,byrow=F)
@@ -196,27 +200,28 @@ pB <- matrix(c(pB0,pB1),ncol=2,nrow=10,byrow=F)
 Max <- rep(3.85,10)
 Min <- c(rep(0.1,9),2)
 
-
-
 # Draw 's.num' samples from the distribution, have each sample complete the
 # task 't.num' times 
 
 
-
 # Make a matrix of R values and Mu values from the populations
 
-subjects <- 10
-draws    <- 1
+subjects <- 150
+s.num    <- 10
+
+A   <- do.call(rbind, replicate(subjects,A,simplify=F))
+B   <- do.call(rbind, replicate(subjects,B,simplify=F))
+pA  <- do.call(rbind, replicate(subjects,pA,simplify=F))
+pB  <- do.call(rbind, replicate(subjects,pB,simplify=F))
+Max <- do.call(rbind, replicate(subjects,Max,simplify=F))
+Min <- do.call(rbind, replicate(subjects,Min,simplify=F))
 
 
+r.mat  <- matrix( rnorm( subjects* s.num ,mean=DD[1,7],sd=DD[2,7]), ncol=s.num )
+mu.mat <- matrix( rgamma(subjects* s.num ,shape=DD[3,7],scale=DD[4,7]),ncol=s.num )
 
-A  <- do.call(rbind, replicate(10,A,simplify=F))
-
-r.mat  <- matrix( rnorm( subjects* draws ,mean=DD[1,7],sd=DD[2,7]), ncol=draws )
-mu.mat <- matrix( rgamma(subjects* draws ,shape=DD[3,7],scale=DD[4,7]),ncol=draws )
-
-r.mat  <- matrix( rnorm( subjects* draws ,mean=.45,sd=.1), ncol=draws )
-mu.mat <- matrix( rgamma(subjects* draws ,shape=14,scale=.01),ncol=draws )
+r.mat  <- matrix( rnorm( subjects* s.num ,mean=.45,sd=.1), ncol=s.num )
+mu.mat <- matrix( rgamma(subjects* s.num ,shape=14,scale=.01),ncol=s.num )
 
 r.mat  <- cbind( 1:nrow(r.mat) , r.mat)
 mu.mat <- cbind( 1:nrow(mu.mat) , mu.mat)
@@ -227,13 +232,24 @@ mu.mat <- do.call(rbind, replicate(10,mu.mat,simplify=F))
 r.mat  <- r.mat[order(r.mat[,1]),2:ncol(r.mat)]
 mu.mat <- mu.mat[order(mu.mat[,1]),2:ncol(mu.mat)]
 
-# choice-cpp returns a matrix of choices given the instrument and the
+par.mat <- data.frame(rbind(r.mat,mu.mat))
+
+# getChoice returns a matrix of choices given the instrument and the
 # preferences
 
-t.num <- 10
+t.num <- 100
 
-OO <- getChoice(r.mat,mu.mat,A,B,pA,pB,Max,Min,t.num)
+mkChoice <- function(par.vec){
 
+	r.vec <- par.vec[1:(length(par.vec)/2)]
+	mu.vec <- par.vec[(length(par.vec)/2)+1:length(par.vec)]
+
+	getChoice(r.vec,mu.vec,A,B,pA,pB,Max,Min,t.num)
+}
+
+
+OO <- mclapply(par.mat,mkChoice,mc.cores=cores)
+	
 
 stop("here")
 

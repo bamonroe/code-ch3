@@ -34,8 +34,8 @@ NumericMatrix getChoice(NumericVector r, NumericVector mu,
 	NumericVector ctx = crra(max,r) - crra(min,r);
 
 	// Calculate the utility of the lotteries
-	NumericVector UA = (pA(_,0) * crra(A(_,0),r)) + (pA(_,0) * crra(A(_,1),r));
-	NumericVector UB = (pB(_,0) * crra(B(_,0),r)) + (pB(_,0) * crra(B(_,1),r));
+	NumericVector UA = (pA(_,0) * crra(A(_,0),r)) + (pA(_,1) * crra(A(_,1),r));
+	NumericVector UB = (pB(_,0) * crra(B(_,0),r)) + (pB(_,1) * crra(B(_,1),r));
 
 	// Re-base utility of B and add in context and fechner
 	NumericVector UB1  = (UB/ctx/mu) - (UA/ctx/mu);
@@ -65,8 +65,8 @@ NumericMatrix getChoice(NumericVector r, NumericVector mu,
 		rand = runif(nn);
 
 		// Grab the choice 
-		//c(_,i) = ifelse(PA>rand,0,1);
-		c(_,i) = PA;
+		c(_,i) = ifelse(PA>rand,0,1);
+		//c(_,i) = PA;
 	}
 
 	return(c);
