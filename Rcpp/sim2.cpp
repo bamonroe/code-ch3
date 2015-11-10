@@ -6,6 +6,7 @@ double crra(double x,double r){
 	return(pow(x,r) / r);
 }
 
+
 NumericVector perH(NumericVector R, NumericVector MU, NumericVector A0, NumericVector A1, NumericVector B0, NumericVector B1,
 										NumericVector pA0, NumericVector pA1, NumericVector pB0, NumericVector pB1,
 										NumericVector max, NumericVector min, NumericVector c){
@@ -75,18 +76,45 @@ NumericVector perH(NumericVector R, NumericVector MU, NumericVector A0, NumericV
 
 }
 
+
 // [[Rcpp::export]]
-NumericVector simcpp(NumericMatrix r,NumericMatrix mu, NumericVector A0, NumericVector A1, NumericVector B0, NumericVector B1,
-										NumericVector pA0, NumericVector pA1, NumericVector pB0, NumericVector pB1,
-										NumericVector max, NumericVector min, NumericVector c){
+double MSL_cpp(NumericVector par, NumericMatrix h1, NumericMatrix h2,
+					NumericVector A0, NumericVector A1, NumericVector B0, NumericVector B1,
+					NumericVector pA0, NumericVector pA1, NumericVector pB0, NumericVector pB1,
+					NumericVector max, NumericVector min, NumericVector c){
+    
 
-	int ncol = r.ncol(), nrow = c.length();
-	NumericMatrix sim(nrow,ncol);
+	double rm = par[0];
+	double rs = exp(par[1]);
+	double um = exp(par[2]);
+	double us = exp(par[3]);
 
-	for(int i=0;i<ncol;i++){
-		sim(_,i) = perH( r(_,i), mu(_,i), A0, A1, B0, B1, pA0, pA1, pB0, pB1, max, min, c);
+	double k = pow(um,2) / pow(us,2);
+	double t = pow(us,2) / um;
+
+	int rnum = h1.nrow();
+	int h = h1.ncol();
+
+	NumericMatrix r(rnum,h);
+	NumericMatrix mu(rnum,h);
+
+	NumericMatrix sim(rnum,h);
+
+	for(int i = 0; i < h ; i++){
+		r(_,i)  = qnorm(h1(_,i),rm,rs);
+		mu(_,i) = qgamma(h2(_,i),k,t);
+		sim(_,i) = perH( r(_,i),mu(_,i), A0, A1, B0, B1, pA0, pA1, pB0, pB1, max, min, c);
 	}
 
-	return(sim);
+	NumericVector sl(rnum);
+
+	for(int i = 0; i < rnum ; i++){
+		sl[i] = mean(sim(i,_));
+	}
+
+	sl = log(sl);
+	return(-sum(sl));
+
 
 }
+

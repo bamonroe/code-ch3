@@ -69,7 +69,7 @@ regenH <- function(Data) {
     
 }
 
-MSL <- function(par,h,h1,h2){
+MSL <- function(par,h1,h2){
 
 	par[2:4] <- exp(par[2:4])
 
@@ -82,8 +82,8 @@ MSL <- function(par,h,h1,h2){
 	t <- (us^2)/um
 
 	# Turn the halton sequences into distributions governed by par[]
-	r  <- matrix(qnorm(h1,mean=rm,sd=rs), ncol=h)
-	mu <- matrix(qgamma(h2,shape=k,scale=t), ncol=h) 
+	r  <- qnorm(h1,mean=rm,sd=rs)
+	mu <- qgamma(h2,shape=k,scale=t)
 
 	sim <- simcpp3(r=r,
 				mu=mu,
@@ -116,8 +116,8 @@ MSL <- function(par,h,h1,h2){
 
 do.optim <- function(h,int){
     
-	h1 <- H1[,1:h]
-	h2 <- H2[,1:h]
+	h1 <- matrix(H1[,1:h], ncol=h)
+	h2 <- matrix(H2[,1:h], ncol=h)
 
 	con <- list(trace=1,maxit=100)
 
@@ -163,10 +163,12 @@ do.optim <- function(h,int){
 }
 
 
-# P is a datafram with the population parameters used in the Agg-Gen
-#load("../data/agg-dat/P-Agg30k-S500.Rda")
 load("Pars.Rda")
 
+## P is a datafram with the population parameters used in the Agg-Gen
+#load("../data/agg-dat/P-Agg30k-S500.Rda")
+#
+#
 ## Now each column is a set
 #P <- data.frame(t(data.matrix(P)))
 #
