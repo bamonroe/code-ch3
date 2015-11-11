@@ -64,25 +64,22 @@ regenH <- function(Data) {
 	# Make the sequences
 	H[[1]] <- mkhalton(500,prime=3,HH=HH,UH=UH,N=N)
 	H[[2]] <- mkhalton(500,prime=7,HH=HH,UH=UH,N=N)
+	H[[3]] <- mkhalton(500,prime=13,HH=HH,UH=UH,N=N)
+	H[[4]] <- mkhalton(500,prime=17,HH=HH,UH=UH,N=N)
 
 	return(H)
     
 }
 
-MSL <- function(par,h1,h2){
+MSL.RDU <- function(par,h1,h2){
 
 	par[2:4] <- exp(par[2:4])
 
-	rm <- par[1]
-	rs <- par[2]
-
-	um <- par[3]
-	us <- par[4]
-	k <- (um^2)/(us^2)
-	t <- (us^2)/um
+	k <- (par[3]^2)/(par[4]^2)
+	t <- (par[4]^2)/par[3]
 
 	# Turn the halton sequences into distributions governed by par[]
-	r  <- qnorm(h1,mean=rm,sd=rs)
+	r  <- qnorm(h1,mean=par[1],sd=par[2])
 	mu <- qgamma(h2,shape=k,scale=t)
 
 	sim <- simcpp3(r=r,
@@ -104,7 +101,43 @@ MSL <- function(par,h1,h2){
 	# since each row corresponds to a unique choice. Thus the list needs to 
 	# be made into a matrix to do sums. 
 
-	#like <- matrix(unlist(sim), ncol=h)
+	sl <- sum(log(rowMeans(sim)))
+
+	# optim minimizes functions, so need to return the negitive
+	# of the log-likelihood in order to maximize the ll
+	return(-sl)
+
+}
+
+MSL.EUT <- function(par,h1,h2){
+
+	par[2:4] <- exp(par[2:4])
+
+	k <- (par[3]^2)/(par[4]^2)
+	t <- (par[4]^2)/par[3]
+
+	# Turn the halton sequences into distributions governed by par[]
+	r  <- qnorm(h1,mean=par[1],sd=par[2])
+	mu <- qgamma(h2,shape=k,scale=t)
+
+	sim <- simcpp3(r=r,
+				mu=mu,
+				A0=D$A0,
+				A1=D$A1,
+				B0=D$B0,
+				B1=D$B1,
+				pA0=D$pA0,
+				pA1=D$pA1,
+				pB0=D$pB0,
+				pB1=D$pB1,
+				max=D$max,
+				min=D$min,
+				c=D$c 
+				)
+
+	# Each column of sim is a simulation, but we need the means of each row,
+	# since each row corresponds to a unique choice. Thus the list needs to 
+	# be made into a matrix to do sums. 
 
 	sl <- sum(log(rowMeans(sim)))
 
@@ -116,12 +149,14 @@ MSL <- function(par,h1,h2){
 
 do.optim <- function(h,int){
     
-	h1 <- matrix(H1[,1:h], ncol=h)
-	h2 <- matrix(H2[,1:h], ncol=h)
+	h1 <- matrix(H[[1]][,1:h], ncol=h)
+	h2 <- matrix(H[[2]][,1:h], ncol=h)
+	h3 <- matrix(H[[3]][,1:h], ncol=h)
+	h4 <- matrix(H[[4]][,1:h], ncol=h)
 
 	con <- list(trace=1,maxit=100)
 
-	m <- optim(par=int,fn=MSL,h=h,h1=h1,h2=h2,method="BFGS", control=con,hessian=TRUE )
+	m <- optim(par=int,fn=MSL.EUT,h=h,h1=h1,h2=h2,method="BFGS", control=con,hessian=TRUE )
 
 	# Get the inverse of the Hessian
 	fisher <- solve(m$hessian)
@@ -161,6 +196,64 @@ do.optim <- function(h,int){
 	return(mm)
 
 }
+
+do.optim3 <- function(h,int){
+    
+	h1 <- matrix(H1[,1:h],ncol=h)
+	h2 <- matrix(H2[,1:h],ncol=h)
+	h3 <- matrix(H3[,1:h],ncol=h)
+	h4 <- matrix(H4[,1:h],ncol=h)
+
+	con <- list(trace=1,maxit=100)
+
+	m <- optim(par=int,fn=MSL_RDU,method="BFGS", control=con,hessian=TRUE,
+			   h1=h1,h2=h2,h3=h3,h4=h4,
+			   A0=D$A0,A1=D$A1,B0=D$B0,B1=D$B1,
+			   pA0=D$pA0,pA1=D$pA1,pB0=D$pB0,pB1=D$pB1,
+			   max=D$max,min=D$min,c=D$c
+			   )
+
+	# Get the inverse of the Hessian
+	fisher <- solve(m$hessian)
+	# Get the square root of it
+	se <- sqrt(diag(fisher))
+	# Get the 95% confidence interval
+	up <- m$par + 1.96*se
+	low <- m$par - 1.96*se
+
+	# Get the t stat
+	t <- m$par / se
+
+	# Get the p-values
+	pval<-2*(1-pt(abs(t),nrow(D)-length(int)))
+
+	# Adjust for the logged parameters
+	tt <-  m$par
+	tt[2:8] <- exp(tt[2:8])
+
+	ts <- se
+	ts[2:8] <- exp(se[2:8])
+
+	tu <- up
+	tu[2:8] <- exp(tu[2:8])
+
+	tl <- low
+	tl[2:8] <- exp(tl[2:8])
+
+	start <-int
+	start[2:8] <- exp(int[2:8])
+
+#	return(m)
+
+	# Save everything in a convienient place
+	mm <- data.frame(real=real,init=start,est=m$par,par=tt,se=se,lower=tl,upper=tu,pvalue=pval,llike=m$value, H=h, HH=HH, UH=UH)
+	# Print these things out
+	print(mm)
+	cat('\n')
+	return(mm)
+
+}
+
 
 
 load("Pars.Rda")
@@ -209,7 +302,7 @@ Min <- c(rep(0.1,9),2)
 # Make a matrix of R values and Mu values from the populations
 
 subjects <- 150
-s.num    <- 10
+s.num    <- 2
 
 A   <- do.call(rbind, replicate(subjects,A,simplify=F))
 B   <- do.call(rbind, replicate(subjects,B,simplify=F))
