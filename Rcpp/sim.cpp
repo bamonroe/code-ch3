@@ -1,92 +1,205 @@
 #include <Rcpp.h>
 using namespace Rcpp;
 
-
 double crra(double x,double r){
 	return(pow(x,r) / r);
 }
 
-NumericVector perH(NumericVector R, NumericVector MU, NumericVector A0, NumericVector A1, NumericVector B0, NumericVector B1,
-										NumericVector pA0, NumericVector pA1, NumericVector pB0, NumericVector pB1,
-										NumericVector max, NumericVector min, NumericVector c){
+// pow takes any base, but only up to double exponent, this function fixes that
+NumericVector vpow(const NumericVector base, const NumericVector exp) {
+  NumericVector out(base.size());
+  std::transform(base.begin(), base.end(),
+                 exp.begin(), out.begin(), ::pow);
+  return out;
+}
 
-	int nn  = R.size();
-
-	double ctx[nn];
-	double UA[nn];
-	double UB[nn];
-	double UA1[nn];
-	double UB1[nn];
-	double pA[nn];
-	double pB[nn];
-
-	double r[nn];
-	double mu[nn];
-
-	NumericVector ll(nn);
-
-	for(int i=0;i<nn;i++){
-		r[i] = 1 - R[i];
-		mu[i] = MU[i];
-
-		ctx[i] = crra(max[i],r[i]) - crra(min[i],r[i]);
-
-		UA[i] = (pA0[i] * crra(A0[i],r[i])) + (pA1[i] * crra(A1[i],r[i]));
-		UB[i] = (pB0[i] * crra(B0[i],r[i])) + (pB1[i] * crra(B1[i],r[i]));
-
-		UB1[i]  = (UB[i]/ctx[i]/mu[i]) - (UA[i]/ctx[i]/mu[i]);
-		UA1[i]  = 0;
-
-		if(  UB1[i] == NA_REAL ){
-			if( UB[i] > UA[i]) {
-				pA[i] = 0;
-				pB[i] = 1;
-			}
-			else{
-				pA[i] = 1;
-				pB[i] = 0;
-			}
-		}
-		else{
-			if( UB1[i] > 709 ){
-				pA[i] = 0;
-				pB[i] = 1;
-			}
-			else{
-				if( UB1[i] < -709 ) {
-					pA[i] = 1;
-					pB[i] = 0;
-				}
-				else{
-					pA[i] = exp(UA1[i]) / (exp(UB1[i]) + 1);
-					pB[i] = exp(UB1[i]) / (exp(UB1[i]) + 1);
-				}
-			}
-		}
-		if( c[i] == 0 ){
-			ll[i] = pA[i];
-		}
-		else{
-			ll[i] = pB[i];
-		}
-	}
-
-	return(ll);
-
+NumericVector pw(NumericVector p , NumericVector a, NumericVector b){
+     return( exp(-b * vpow(-log(p), a)) );
 }
 
 // [[Rcpp::export]]
-NumericVector simcpp(NumericMatrix r,NumericMatrix mu, NumericVector A0, NumericVector A1, NumericVector B0, NumericVector B1,
-										NumericVector pA0, NumericVector pA1, NumericVector pB0, NumericVector pB1,
-										NumericVector max, NumericVector min, NumericVector c){
+double MSL_EUT(NumericVector par, NumericMatrix h1, NumericMatrix h2,
+					NumericVector A0, NumericVector A1, NumericVector B0, NumericVector B1,
+					NumericVector pA0, NumericVector pA1, NumericVector pB0, NumericVector pB1,
+					NumericVector max, NumericVector min, NumericVector c){
+    
 
-	int ncol = r.ncol(), nrow = c.length();
-	NumericMatrix sim(nrow,ncol);
+	double rm = par[0];
+	double rs = exp(par[1]);
+	double um = exp(par[2]);
+	double us = exp(par[3]);
 
-	for(int i=0;i<ncol;i++){
-		sim(_,i) = perH( r(_,i), mu(_,i), A0, A1, B0, B1, pA0, pA1, pB0, pB1, max, min, c);
+	double k = pow(um,2) / pow(us,2);
+	double t = pow(us,2) / um;
+
+	int rnum = h1.nrow();
+	int h = h1.ncol();
+
+	NumericMatrix r(rnum,h);
+	NumericMatrix mu(rnum,h);
+
+	NumericVector ctx(rnum);
+	NumericVector UA(rnum);
+	NumericVector UB(rnum);
+	NumericVector UB1(rnum);
+	NumericVector PA(rnum);
+
+	NumericVector N0(rnum);
+	NumericVector N1(rnum);
+	NumericVector pA(rnum);
+
+	NumericMatrix sim(rnum,h);
+
+	for(int i = 0; i < h ; i++){
+
+		r(_,i)  = qnorm(h1(_,i),rm,rs);
+		mu(_,i) = qgamma(h2(_,i),k,t);
+
+		// Calculate the context
+		ctx = vpow(max,(1-r(_,i)))/(1-r(_,i)) - vpow(min,(1-r(_,i)))/(1-r(_,i));
+
+		// Calculate the utility of the lotteries
+		UA = (pA0 * vpow(A0,(1-r(_,i)))/(1-r(_,i))) + (pA1 * vpow(A1,(1-r(_,i)))/(1-r(_,i)));
+		UB = (pB0 * vpow(B0,(1-r(_,i)))/(1-r(_,i))) + (pB1 * vpow(B1,(1-r(_,i)))/(1-r(_,i)));
+
+		// Re-base utility of B and add in context and fechner
+		UB1  = (UB/ctx/mu(_,i)) - (UA/ctx/mu(_,i));
+
+		// If we have no issues, this is the choice probability of A
+		PA = (1 / (1 + exp(UB1)));
+
+		// Are we dealing with an insane number?
+		// yes
+		N0 = ifelse( UB > UA , 0 , 1 ); 
+		// no, but are we making an insane number via exp?
+		N1 = ifelse( UB1 > 709 , 0 , PA );
+
+		// Check for the 2 issues, and return the probability of A
+		pA = ifelse( is_na(UB1) , N0 , N1);
+
+		// Making pB = 1-pA saves us the exponential calculations - it's faster
+		NumericVector pB = 1 - pA;
+
+		// Grab the choice probability for the chosen option
+		sim(_,i) = ifelse(c==0,pA,pB);
+
 	}
 
-	return(sim);
+	NumericVector sl(rnum);
+
+	for(int i = 0; i < rnum ; i++){
+		sl[i] = mean(sim(i,_));
+	}
+
+	sl = log(sl);
+	return(-sum(sl));
 
 }
+
+
+// [[Rcpp::export]]
+double MSL_RDU(NumericVector par, NumericMatrix h1, NumericMatrix h2, NumericMatrix h3, NumericMatrix h4,
+					NumericVector A0, NumericVector A1, NumericVector B0, NumericVector B1,
+					NumericVector pA0, NumericVector pA1, NumericVector pB0, NumericVector pB1,
+					NumericVector max, NumericVector min, NumericVector c){
+    
+
+	double rm = par[0];
+	double rs = exp(par[1]);
+	double um = exp(par[2]);
+	double us = exp(par[3]);
+
+	double am = exp(par[4]);
+	double as = exp(par[5]);
+
+	double bm = exp(par[6]);
+	double bs = exp(par[7]);
+
+	double uk = pow(um,2) / pow(us,2);
+	double ut = pow(us,2) / um;
+
+	double ak = pow(am,2) / pow(as,2);
+	double at = pow(as,2) / am;
+
+	double bk = pow(bm,2) / pow(bs,2);
+	double bt = pow(bs,2) / bm;
+
+	int rnum = h1.nrow();
+	int h = h1.ncol();
+
+	NumericMatrix r(rnum,h);
+	NumericMatrix mu(rnum,h);
+	NumericMatrix alpha(rnum,h);
+	NumericMatrix beta(rnum,h);
+
+	NumericVector wA1(rnum);
+	NumericVector wA0(rnum);
+	NumericVector wB1(rnum);
+	NumericVector wB0(rnum);
+
+	NumericVector ctx(rnum);
+	NumericVector UA(rnum);
+	NumericVector UB(rnum);
+	NumericVector UB1(rnum);
+	NumericVector PA(rnum);
+
+	NumericVector N0(rnum);
+	NumericVector N1(rnum);
+	NumericVector pA(rnum);
+
+	NumericMatrix sim(rnum,h);
+
+	for(int i = 0; i < h ; i++){
+
+		r(_,i)  = qnorm(h1(_,i),rm,rs);
+		mu(_,i) = qgamma(h2(_,i),uk,ut);
+		alpha(_,i) = qgamma(h3(_,i),ak,at);
+		beta (_,i) = qgamma(h4(_,i),bk,bt);
+
+		wA1 = pw(pA1,alpha(_,i),beta(_,i));
+		wA0 = pw(pA0 + pA1,alpha(_,i),beta(_,i)) - pw(pA1,alpha(_,i),beta(_,i));
+
+		wB1 = pw(pB1,alpha(_,i),beta(_,i));
+		wB0 = pw(pB0 + pB1,alpha(_,i),beta(_,i)) - pw(pB1,alpha(_,i),beta(_,i));
+
+		// Calculate the context
+		ctx = vpow(max,(1-r(_,i)))/(1-r(_,i)) - vpow(min,(1-r(_,i)))/(1-r(_,i));
+
+		// Calculate the utility of the lotteries
+		UA = (wA0 * vpow(A0,(1-r(_,i)))/(1-r(_,i))) + (wA1 * vpow(A1,(1-r(_,i)))/(1-r(_,i)));
+		UB = (wB0 * vpow(B0,(1-r(_,i)))/(1-r(_,i))) + (wB1 * vpow(B1,(1-r(_,i)))/(1-r(_,i)));
+
+		// Re-base utility of B and add in context and fechner
+		UB1  = (UB/ctx/mu(_,i)) - (UA/ctx/mu(_,i));
+
+		// If we have no issues, this is the choice probability of A
+		PA = (1 / (1 + exp(UB1)));
+
+		// Are we dealing with an insane number?
+		// yes
+		N0 = ifelse( UB > UA , 0 , 1 ); 
+		// no, but are we making an insane number via exp?
+		N1 = ifelse( UB1 > 709 , 0 , PA );
+
+		// Check for the 2 issues, and return the probability of A
+		pA = ifelse( is_na(UB1) , N0 , N1);
+
+		// Making pB = 1-pA saves us the exponential calculations - it's faster
+		//pB = 1 - pA;
+
+		// Grab the choice probability for the chosen option
+		sim(_,i) = ifelse(c==0,pA,(1-pA));
+
+	}
+
+	NumericVector sl(rnum);
+
+	for(int i = 0; i < rnum ; i++){
+		sl[i] = mean(sim(i,_));
+	}
+
+	sl = log(sl);
+	return(-sum(sl));
+
+}
+

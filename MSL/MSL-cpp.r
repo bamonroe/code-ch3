@@ -57,65 +57,45 @@ regenH <- function(Data) {
 	# Make the sequences
 	H[[1]] <- mkhalton(500,prime=3,HH=HH,UH=UH,N=N)
 	H[[2]] <- mkhalton(500,prime=7,HH=HH,UH=UH,N=N)
+	H[[3]] <- mkhalton(500,prime=13,HH=HH,UH=UH,N=N)
+	H[[4]] <- mkhalton(500,prime=17,HH=HH,UH=UH,N=N)
 
 	return(H)
     
 }
 
-MSL <- function(par,h,h1,h2){
-
-	par[2:4] <- exp(par[2:4])
-
-	rm <- par[1]
-	rs <- par[2]
-
-	um <- par[3]
-	us <- par[4]
-	k <- (um^2)/(us^2)
-	t <- (us^2)/um
-
-	# Turn the halton sequences into distributions governed by par[]
-	a <- matrix(qnorm(h1,mean=rm,sd=rs), ncol=h)
-	b <- matrix(qgamma(h2,shape=k,scale=t), ncol=h) 
-
-	dd <- rbind(a,b) 
-
-	sim <- simcpp(DD=dd, 
-				A0=D$A0,
-				A1=D$A1,
-				B0=D$B0,
-				B1=D$B1,
-				pA0=D$pA0,
-				pA1=D$pA1,
-				pB0=D$pB0,
-				pB1=D$pB1,
-				max=D$max,
-				min=D$min,
-				c=D$c 
-				)
-
-	# Each column of sim is a simulation, but we need the means of each row,
-	# since each row corresponds to a unique choice. Thus the list needs to 
-	# be made into a matrix to do sums. 
-
-	#like <- matrix(unlist(sim), ncol=h)
-
-	sl <- sum(log(rowMeans(sim)))
-
-	# optim minimizes functions, so need to return the negitive
-	# of the log-likelihood in order to maximize the ll
-	return(-sl)
-
-}
-
-do.optim <- function(h,int){
+do.optim <- function(int,h=50,model="EUT"){
     
-	h1 <- H1[,1:h]
-	h2 <- H2[,1:h]
+	h1 <- matrix(H[[1]][,1:h],ncol=h)
+	h2 <- matrix(H[[2]][,1:h],ncol=h)
+	h3 <- matrix(H[[3]][,1:h],ncol=h)
+	h4 <- matrix(H[[4]][,1:h],ncol=h)
 
-	con <- list(trace=1,maxit=100)
+	con <- list(trace=1,maxit=100,REPORT=1)
 
-	m <- optim(par=int,fn=MSL,h=h,h1=h1,h2=h2,method="BFGS", control=con,hessian=TRUE )
+	# The MSL functions are written entirely in C++ via Rcpp. This cuts down on the
+	# optimization time as the Rcpp code is much faster than the native R.
+
+	if(model=="EUT"){
+		m <- optim(par=int[1:4],fn=MSL_EUT,method="BFGS", control=con,hessian=TRUE,
+				h1=h1,h2=h2,
+				A0=D$A0,A1=D$A1,B0=D$B0,B1=D$B1,
+				pA0=D$pA0,pA1=D$pA1,pB0=D$pB0,pB1=D$pB1,
+				max=D$max,min=D$min,c=D$c
+				)
+    }
+	else if(model=="RDU"){
+		m <- optim(par=int[1:8],fn=MSL_RDU,method="BFGS", control=con,hessian=TRUE,
+				h1=h1,h2=h2,h3=h3,h4=h4,
+				A0=D$A0,A1=D$A1,B0=D$B0,B1=D$B1,
+				pA0=D$pA0,pA1=D$pA1,pB0=D$pB0,pB1=D$pB1,
+				max=D$max,min=D$min,c=D$c
+				)
+	}
+
+
+	# p.num is the number of parameters
+	p.num <- length(m$par)
 
 	# Get the inverse of the Hessian
 	fisher <- solve(m$hessian)
@@ -129,26 +109,26 @@ do.optim <- function(h,int){
 	t <- m$par / se
 
 	# Get the p-values
-	pval<-2*(1-pt(abs(t),nrow(D)-length(int)))
+	pval<-2*(1-pt(abs(t),nrow(D)-p.num))
 
 	# Adjust for the logged parameters
 	tt <-  m$par
-	tt[2:4] <- exp(tt[2:4])
+	tt[2:p.num] <- exp(tt[2:p.num])
 
 	ts <- se
-	ts[2:4] <- exp(se[2:4])
+	ts[2:p.num] <- exp(se[2:p.num])
 
 	tu <- up
-	tu[2:4] <- exp(tu[2:4])
+	tu[2:p.num] <- exp(tu[2:p.num])
 
 	tl <- low
-	tl[2:4] <- exp(tl[2:4])
+	tl[2:p.num] <- exp(tl[2:p.num])
 
-	start <-int
-	start[2:4] <- exp(int[2:4])
+	start <-int[1:p.num]
+	start[2:p.num] <- exp(int[2:p.num])
 
 	# Save everything in a convienient place
-	mm <- data.frame(real=real,init=start,est=m$par,par=tt,se=se,lower=tl,upper=tu,pvalue=pval,llike=m$value, H=h, HH=HH, UH=UH)
+	mm <- data.frame(real=real[1:p.num],init=start,est=m$par,par=tt,se=se,lower=tl,upper=tu,pvalue=pval,llike=m$value, H=h, HH=HH, UH=UH)
 	# Print these things out
 	print(mm)
 	cat('\n')
@@ -156,8 +136,9 @@ do.optim <- function(h,int){
 
 }
 
+
 # How many simulations to be done?
-h <- 50
+h <- 300
 
 # Which type of halton draws? 0 means every observation gets the same draw, 1
 # means that each subject gets their own draw, 2 means every observaltion gets
@@ -170,38 +151,32 @@ UH <- 1
 
 # What are the initial values optim will start with? Log the ones that need to
 # be greater than 0.
-dist <- c(.5,.5,.5,.5)
+dist <- c(.5,.5,.5,.5,1,.5,1,.5)
 init <- dist
-init[2:4] <- log(dist[2:4])
+init[2:8] <- log(dist[2:8])
 
 # do.optim returns a dataset with the relevent information. Let's estimate the
 # 4 sets of choice data
 
 load("../data/choice-dat/choice10.Rda")
 H <- regenH(D)
-H1 <- H[[1]]
-H2 <- H[[2]]
-real <- c(rm=mean(D$r),rs=sd(D$r),um=mean(D$mu),us=sd(D$mu))
-m10 <- do.optim(int=init,h=h )
+
+real <- c(rm=mean(D$r),rs=sd(D$r),um=mean(D$mu),us=sd(D$mu),am=1,as=0,bm=1,bs=0)
+m10.e <- do.optim(int=init,h=h,model="EUT")
+m10.r <- do.optim(int=init,h=h,model="RDU")
 
 #load("../sim/choice20.Rda")
 #H <- regenH(D)
-#H1 <- H[[1]]
-#H2 <- H[[2]]
 #real <- c(rm=mean(D$r),rs=sd(D$r),um=mean(D$mu),us=sd(D$mu))
 #m20 <- do.optim(int=init,h=h )
 #
 #load("../sim/choice30.Rda")
 #H <- regenH(D)
-#H1 <- H[[1]]
-#H2 <- H[[2]]
 #real <- c(rm=mean(D$r),rs=sd(D$r),um=mean(D$mu),us=sd(D$mu))
 #m30 <- do.optim(int=init,h=h )
 #
 #load("../sim/choice40.Rda")
 #H <- regenH(D)
-#H1 <- H[[1]]
-#H2 <- H[[2]]
 #real <- c(rm=mean(D$r),rs=sd(D$r),um=mean(D$mu),us=sd(D$mu))
 #m40 <- do.optim(int=init,h=h )
 
