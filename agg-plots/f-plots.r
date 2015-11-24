@@ -17,7 +17,7 @@ load("../data/agg-dat/Agg1Mil-S10k.Rda")
 
 # Don't always want to use it all, there is tons of data
 sam <- runif(nrow(MM))
-sam.prop <- .01
+sam.prop <- 1
 sam <- sam < sam.prop
 
 M0 <- MM[which(sam),]
@@ -173,7 +173,7 @@ getPlotted <- function(plot){
 	  	      scale_fill_gradientn(name=leg.title,space="Lab",colours=colors,limits=limits,breaks=breaks)
 	p <- p + geom_point(shape=shape, alpha=alph, aes_string(y="value",color=s.par,fill=s.par) )
 	p <- p + facet_wrap( facets=~variable, ncol=2, scale="free_y")
-	p <- p + labs(title=title,x=x.title,y=NULL)
+	p <- p + labs(x=x.title,y=NULL)
 	p <- p + theme(legend.title=element_text(size=leg.title.size,vjust=.9),
 					legend.text=element_text(size=leg.text.size,angle=leg.text.angle),
 					legend.position=leg.position,
@@ -199,7 +199,7 @@ getPlotted <- function(plot){
 
 	fname <- paste("../data/agg-plots/",dat,"-",x.par,".jpg",sep="")
 
-#	ggsave(filename=fname, plot=p, width=w, height=h, units="in",scale=save.scale )
+	ggsave(filename=fname, plot=p, width=w, height=h, units="in",scale=save.scale )
 
 	return(ret)
 
