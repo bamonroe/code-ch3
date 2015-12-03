@@ -65,14 +65,11 @@ mingamma <- function(par){
 	lus <- exp(par[2])
 	lust <- exp(par[3])
 
-	gamma <- qgamma(halton(30,531,3),k,1/t)
+	gamma <- qgamma(halton(30,531,7),k,1/t)
 
-	lgamma <- exp(qnorm(halton(30,531,3),lum,lus))
+	lgamma <- exp(qnorm(halton(30,531,7),lum,lus))
 	lgamma <- lgamma / (1 + lgamma)
 	lgamma <- lgamma * lust
-
-	gamma  <- gamma[order(gamma)]
-	lgamma <- lgamma[order(lgamma)]
 
 	sum((gamma - lgamma)^2)
 }
@@ -89,9 +86,6 @@ minnorm <- function(par){
 	lnorm <- exp(qnorm(halton(30,531,3),lrm,lrs))
 	lnorm <- lnorm / (1 + lnorm)
 	lnorm <- lnorm * lrst + lrsh
-
-	norm  <- norm[order(norm)]
-	lnorm <- lnorm[order(lnorm)]
 
 	sum((norm - lnorm)^2)
 }
