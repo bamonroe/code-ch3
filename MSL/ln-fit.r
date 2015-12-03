@@ -25,10 +25,7 @@ lu <- function(par){
 	lus <- exp(par[2])
 	lust <- exp(par[3])
 
-	k <- lum^2 / lus^2
-	t <- lus^2 / lum
-
-	oo <- exp(qgamma(halton(1,500,3),k,1/t))
+	oo <- exp(qnorm(halton(1,500,3),lum,lus,lust))
 	oo <- oo / (1 + oo)
 	oo * lust
 }
@@ -58,12 +55,8 @@ tu <- function(par){
 	lus <- exp(par[2])
 	lust <- exp(par[3])
 
-	k <- lum^2 / lus^2
-	t <- lus^2 / lum
+	c(lum,lus,lust)
 
-	oo <- exp(qgamma(halton(1,500,3),k,1/t))
-	oo <- oo / (1 + oo)
-	oo * lust
 }
 
 mingamma <- function(par){
@@ -72,7 +65,7 @@ mingamma <- function(par){
 	lus <- exp(par[2])
 	lust <- exp(par[3])
 
-	gamma <- exp(qgamma(halton(30,531,3),k,1/t))
+	gamma <- qgamma(halton(30,531,3),k,1/t)
 
 	lgamma <- exp(qnorm(halton(30,531,3),lum,lus))
 	lgamma <- lgamma / (1 + lgamma)
@@ -110,23 +103,20 @@ init.n <- init[1:4]
 
 res <- optim(init.n,minnorm)
 
-pp <- tr(res$par)
+pr <- tr(res$par)
 lnorm <- lr(res$par)
 plot(density(lnorm))
 
 print(c(mean(lnorm),sd(lnorm)))
 
 
-
 init.g <- init[5:7]
 
 res <- optim(init.g,mingamma)
 
-pp <- tu(res$par)
+pq <- tu(res$par)
 lgamma <- lu(res$par)
 plot(density(lgamma))
 
 print(c(mean(lgamma),sd(lgamma)))
-
-
 
