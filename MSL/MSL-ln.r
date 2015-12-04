@@ -64,7 +64,7 @@ regenH <- function(Data) {
     
 }
 
-do.optim <- function(int,h=50,model="EUT"){
+do.optim <- function(int,h=50,model="EUT",method="BFGS"){
     
 	h1 <- matrix(H[[1]][,1:h],ncol=h)
 	h2 <- matrix(H[[2]][,1:h],ncol=h)
@@ -75,7 +75,7 @@ do.optim <- function(int,h=50,model="EUT"){
 	# optimization time as the Rcpp code is much faster than the native R.
 
 	if(model=="EUT"){
-		m <- optim(par=int[1:7],fn=MSL_EUT_LN,method="BFGS", control=con,hessian=TRUE,
+		m <- optim(par=int[1:7],fn=MSL_EUT_LN,method=method, control=con,hessian=TRUE,
 				h1=h1,h2=h2,
 				A=cbind(D$A0,D$A1),B=cbind(D$B0,D$B1),
 				pA=cbind(D$pA0,D$pA1),pB=cbind(D$pB0,D$pB1),
@@ -121,7 +121,6 @@ do.optim <- function(int,h=50,model="EUT"){
 
 	# Save everything in a convienient place
 	if(exists("real")){
-        
 		mm <- data.frame(real=real[1:p.num],init=start,est=m$par,par=tt,se=se,lower=tl,upper=tu,pvalue=pval,llike=m$value, H=h, HH=HH, UH=UH)
 	}
 	else{
@@ -150,9 +149,8 @@ UH <- 1
 
 # What are the initial values optim will start with? Log the ones that need to
 # be greater than 0.
-c(0.007813979,  0.177822618,  7.573731819, -3.190394042)
-dist <- c(-2,.5,15,0,-4,.6,14)
-init <- c(dist[1],log(dist[2]),log(dist[3]),dist[4],dist[5],log(dist[6]),log(dist[7]))
+dist <- c(0.007813979,  0.177822618,  7.573731819, -3.190394042, -1.992086, 0.9664797, 2.1886196)
+init <- c(dist[1],log(dist[2:3]),dist[4:5],log(dist[6:7]))
 
 # do.optim returns a dataset with the relevent information. Let's estimate the
 # 4 sets of choice data
@@ -161,7 +159,7 @@ load("../data/choice-dat/choice10.Rda")
 H <- regenH(D)
 
 real0 <- c(rm=mean(D$r),rs=sd(D$r),um=mean(D$mu),us=sd(D$mu))
-m10.e <- do.optim(int=init,h=h,model="EUT")
+m10.e <- do.optim(int=init,h=h,model="EUT",method="Nelder-Mead")
 #m10.r <- do.optim(int=init,h=h,model="RDU")
 
 #load("../sim/choice20.Rda")

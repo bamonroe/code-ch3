@@ -253,14 +253,13 @@ double MSL_EUT_LN(NumericVector par, NumericMatrix h1, NumericMatrix h2,
 		// Calculate the context
 		ctx = vpow(max,(1-r(_,i)))/(1-r(_,i)) - vpow(min,(1-r(_,i)))/(1-r(_,i));
 
-
 		// Calculate the utility of the lotteries
 		UA = (pA(_,0) * vpow(A(_,0),(1-r(_,i)))/(1-r(_,i))) ;
 		UB = (pB(_,0) * vpow(B(_,0),(1-r(_,i)))/(1-r(_,i))) ;
 
 		for(int j = 1; j < pnum ; j++ ){
 			UA = UA + (pA(_,j) * vpow(A(_,j),(1-r(_,i)))/(1-r(_,i))) ;
-			UA = UA + (pB(_,j) * vpow(B(_,j),(1-r(_,i)))/(1-r(_,i))) ;
+			UB = UB + (pB(_,j) * vpow(B(_,j),(1-r(_,i)))/(1-r(_,i))) ;
 		}
 
 		// Re-base utility of B and add in context and fechner
