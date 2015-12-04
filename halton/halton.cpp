@@ -20,7 +20,7 @@ double hnum(int index,int base){
 NumericVector halton(int init, int H, int prime){
 
 	int stop = H - init +1 ;
-    
+
 	NumericVector out(stop);
 
     int j;
