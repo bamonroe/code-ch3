@@ -42,7 +42,7 @@ mkhalton <- function(h=75,prime=3,HH=2,UH=1,N){
 	hseq <- hseq[,1:h]
 
 	return(hseq)
-    
+
 }
 
 regenH <- function(Data) {
@@ -61,11 +61,11 @@ regenH <- function(Data) {
 	H[[4]] <- mkhalton(500,prime=17,HH=HH,UH=UH,N=N)
 
 	return(H)
-    
+
 }
 
 do.optim <- function(int,h=50,model="EUT",method="BFGS"){
-    
+
 	h1 <- matrix(H[[1]][,1:h],ncol=h)
 	h2 <- matrix(H[[2]][,1:h],ncol=h)
 

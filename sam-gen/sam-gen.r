@@ -7,7 +7,7 @@ library(microbenchmark)
 library(Rcpp)
 sourceCpp("../Rcpp/halton.cpp")
 #halton(init,H,prime)
-sourceCpp("../Rcpp/GRDD.cpp")
+sourceCpp("../Rcpp/sam-gen.cpp")
 
 library(parallel)
 cores <- detectCores() / 2 
@@ -32,7 +32,7 @@ Max <- rep(3.85,10)
 Min <- c(rep(0.10,9),2)
 
 # How many simulations to run per sample
-snum <- 2000000
+snum <- 2500000
 
 # Set up the Halton sequences
 burn <- 30
@@ -142,6 +142,6 @@ WW  <- c(M.EE=M.EE,
 print(c(WW,rm=rm,rs=rs,um=um,us=us))
 
 samdat <- "../data/sam-dat/"
-filename <- paste(samdat,"R",rm,"U",um,".Rda",sep="")
+filename <- paste(samdat,"2Mil.Rda",sep="")
 save(D,file=filename)
 
