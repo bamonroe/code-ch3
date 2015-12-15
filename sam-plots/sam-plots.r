@@ -47,14 +47,13 @@ getCategory <- function(pat){
 	# Consistent means 1 switch point with 0 in row 1 or 0 switch points
 	switches <- 0
 
-	for(i in 2:10){
+	for(i in 2:9){
 		if(pat[i] != pat[i-1]) switches <- switches + 1
 	}
 
 	consistent <- (pat[1] == 0 & switches ==1 ) | (pat[1] ==0 & switches ==0 ) | (pat[1] ==1 & switches ==0 )
 
-	LightMSB <- (pat[1]==0 & switches == 3 )
-
+	LightMSB <- (pat[1]==0 & switches == 3 ) | (pat[1]==0 & switches == 2 )
 
 	if( consistent & !FOSD ){
 		cat <- c(0)
@@ -76,25 +75,66 @@ getCategory <- function(pat){
 
 }
 
-D$category <- apply(patmat,1,getCategory)
-E <- filter(D,category < 4)
+D$Type <- apply(patmat,1,getCategory)
+E <- filter(D,Type < 4)
 
-E$category <- factor(E$category, labels=c("Consistent","Consistent + FOSD","Light MSB","Light MSB + FOSD"))
+# Use arrange so that Consistent is plotted last
+E <- arrange(E,desc(Type))
+
+E$Type <- factor(E$Type, labels=c("Consistent","FOSD Only","Light MSB","Light MSB + FOSD"))
 
 E$ll <- log(E$PC)
 
-# Shape of the points
+
+
+
+# Now to configure the graph aesthetically
+
+# Configure the points
+## Shape of the points
 shape <- 20
-
-# Size of the points
+## Size of the points
 point.size <- 5
-
-# alpha
+## alpha
 alph <- .9
 
-p <- ggplot(data=E, aes_string(x="ll"))
-p <- p + geom_point(shape=shape,size=point.size, alpha=alph, aes_string(y="WP",color="category") )
+# Configure x-axis title
+## title size
+x.title.size <- 14
+## title vertical justification
+x.title.vjust <- 1
 
+# Configure x-axis text
+## text size
+x.text.size <- 11
+## angle of the text
+x.text.angle <- 45
+
+
+# Configure y-axis title
+## title size
+y.title.size <- 14
+## title horizontal justification
+y.title.hjust <- .5
+## title vertical justification
+y.title.vjust <- 1
+
+
+
+
+
+
+
+
+p <- ggplot(data=E, aes_string(x="ll"))
+p <- p + geom_point(shape=shape,size=point.size, alpha=alph, aes_string(y="WP",color="Type") )
+p <- p + labs(x="Log of Simulated Likelihood",y="Expected Ratio of Obtained to Optimal Welfare")
+p <- p + theme(axis.title.x=element_text(size=x.title.size),
+			   axis.text.x=element_text(size=x.text.size,angle=x.text.angle),
+			   axis.title.y=element_text(size=y.title.size,hjust=y.title.hjust,vjust=y.title.vjust)
+				)
+
+p
 
 stop("here")
 
