@@ -85,6 +85,40 @@ E$Type <- factor(E$Type, labels=c("Consistent","FOSD Only","Light MSB","Light MS
 
 E$ll <- log(E$PC)
 
+# There are three points to make, A, B and C. A is the most likely consistent point
+# B is the most likely FOSD only point, C is the consistent point that is closest in
+# liklihood to B that has greater likelihood
+
+cons <- E %>%
+	select(Type,WP,ll) %>%
+	filter(Type=="Consistent") %>%
+	arrange(desc(ll))
+
+FOSD <- E %>%
+	select(Type,WP,ll) %>%
+	filter(Type=="FOSD Only") %>%
+	arrange(desc(ll))
+
+# A and B are straight forward
+A.x <- cons$ll[1]
+A.y <- cons$WP[1]
+
+B.x <- FOSD$ll[1]
+B.y <- FOSD$WP[1]
+
+# Need to find the 
+
+diff <- cons %>%
+	mutate(diff =(ll - B.x)) %>%
+	filter(diff>0) %>%
+	arrange(diff)
+
+C.x <- diff$ll[1]
+C.y <- diff$WP[1]
+
+
+
+stop("here")
 
 
 
@@ -119,6 +153,11 @@ y.title.hjust <- .5
 ## title vertical justification
 y.title.vjust <- 1
 
+# Configure y-axis text
+## text size
+y.text.size <- 11
+## angle of the text
+y.text.angle <- 45
 
 
 
@@ -131,8 +170,9 @@ p <- p + geom_point(shape=shape,size=point.size, alpha=alph, aes_string(y="WP",c
 p <- p + labs(x="Log of Simulated Likelihood",y="Expected Ratio of Obtained to Optimal Welfare")
 p <- p + theme(axis.title.x=element_text(size=x.title.size),
 			   axis.text.x=element_text(size=x.text.size,angle=x.text.angle),
-			   axis.title.y=element_text(size=y.title.size,hjust=y.title.hjust,vjust=y.title.vjust)
-				)
+			   axis.title.y=element_text(size=y.title.size,hjust=y.title.hjust,vjust=y.title.vjust),
+			   axis.text.y=element_text(size=y.text.size,angle=y.text.angle)
+			)
 
 p
 
