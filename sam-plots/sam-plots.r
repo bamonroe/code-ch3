@@ -148,9 +148,9 @@ y.text.angle <- 45
 
 # Configure the annotate for A, B, and C stuff
 ## A needs to be pushed down and to the right
-A.label <- c(A[1]+.1,A[2]-.007)
-B.label <- c(B[1]+.1,B[2]-.007)
-C.label <- c(C[1]+.1,C[2]-.007)
+A.label <- c(A[1]+.2,A[2]-.01)
+B.label <- c(B[1]+.2,B[2]-.01)
+C.label <- c(C[1]+.2,C[2]-.01)
 
 p <- ggplot(data=E, aes_string(x="ll",y="WP"))
 p <- p + annotate("rect", xmin=B[1],xmax=Inf,ymin=-Inf,ymax=B[2],alpha=.2)
@@ -161,9 +161,9 @@ p <- p + theme( axis.title.x=element_text(size=x.title.size),
 				axis.title.y=element_text(size=y.title.size,hjust=y.title.hjust,vjust=y.title.vjust),
 				axis.text.y=element_text(size=y.text.size,angle=y.text.angle)
 				)
-p <- p + annotate("text", x=A.label[1],y=A.label[2], label="A")
-p <- p + annotate("text", x=B.label[1],y=B.label[2], label="B")
-p <- p + annotate("text", x=C.label[1],y=C.label[2], label="C")
+p <- p + annotate("text", x=A.label[1],y=A.label[2], label="X")
+p <- p + annotate("text", x=B.label[1],y=B.label[2], label="Y")
+p <- p + annotate("text", x=C.label[1],y=C.label[2], label="Z")
 
 p
 
