@@ -165,7 +165,7 @@ getPlotted <- function(plot){
 	fac.size <- 24
 
 	# Split the dataset up in a few ways to get multiple smoothed lines
-	s.num <- 10
+	s.num <- 5
 
 	data <- data %>% 
 			mutate_(.dots=setNames(paste0("ntile(",s.par,",",s.num,")"),"bin"))
@@ -175,7 +175,7 @@ getPlotted <- function(plot){
 	p <- qplot()
 	for( i in 1:s.num){
 		#p <- p + geom_smooth(data=splits[[i]],stat="smooth", method="gam", aes_string(x=x.par,y="value"), span=0.01 , formula=y~s(x^3) ) 
-		p <- p + stat_smooth(data=splits[[i]],geom="smooth", method="gam", aes_string(x=x.par,y="value"), span=0.01 , formula=y~s(x^3) ) 
+		p <- p + stat_smooth(data=splits[[i]],geom="smooth", method="gam", aes_string(x=x.par,y="value"), span=0.01 , formula=y~s(x^3) ,color=(i)) 
 	}
 	p <- p + facet_wrap( facets=~variable, ncol=2, scale="free_y")
 
@@ -192,16 +192,16 @@ getPlotted <- function(plot){
 #	#p <- p + geom_smooth(stat="smooth", span=.1, aes_string(y="value",color="bin") )
 #
 #	p <- p + facet_wrap( facets=~variable, ncol=2, scale="free_y")
-#	p <- p + labs(x=x.title,y=NULL)
-#	p <- p + theme(legend.title=element_text(size=leg.title.size,vjust=.9),
-#					legend.text=element_text(size=leg.text.size,angle=leg.text.angle),
-#					legend.position=leg.position,
-#					legend.direction=leg.direction,
-#					legend.key.height=unit(leg.key.height,"in"),
-#					legend.key.width=unit(leg.key.width,"in"),
-#					axis.title.x=element_text(size=x.title.size),
-#					strip.text=element_text(size=fac.size)
-#					)
+	p <- p + labs(x=x.title,y=NULL)
+	p <- p + theme(legend.title=element_text(size=leg.title.size,vjust=.9),
+					legend.text=element_text(size=leg.text.size,angle=leg.text.angle),
+					legend.position=leg.position,
+					legend.direction=leg.direction,
+					legend.key.height=unit(leg.key.height,"in"),
+					legend.key.width=unit(leg.key.width,"in"),
+					axis.title.x=element_text(size=x.title.size),
+					strip.text=element_text(size=fac.size)
+					)
 
 	# Return the plot to the list
 	dat <- ifelse(as.character(plot[3])=="USE.w","Wel","Err")

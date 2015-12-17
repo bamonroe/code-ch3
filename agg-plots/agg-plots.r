@@ -1,6 +1,9 @@
 # Clear All
 rm(list=ls())
 
+
+library(plyr)
+library(dplyr)
 library(ggplot2)
 library(grid)
 library(reshape2)
@@ -9,25 +12,14 @@ library(parallel)
 cores <- detectCores()
 
 ## Haven't use, but will likely use
-library(gridExtra)
 library(np)
 
 # Grab our data
 load("../data/agg-dat/Agg1Mil-S10k.Rda")
+MM <- tbl_df(MM)
 
 # Don't always want to use it all, there is tons of data
-sam <- runif(nrow(MM))
-sam.prop <- 1
-sam <- sam < sam.prop
-
-M0 <- MM[which(sam),]
-
-# Do I want to include some standard deviations above or below the bounds?
-sd.include <- 0
-
-# Functionally determine the alpha channel for the points
-alph <- (1 / (exp(sam.prop))) 
-alph <- .35
+sam.prop <- .21
 
 # Bounds for the means of data
 lbound <- -1.7134
@@ -38,11 +30,15 @@ ubound <- 1.55
 
 # Certain data have rm inside the relevent range of the HL-MPL, others don't.
 # Make the distiction
-IN   <- M0[which(M0$rm > (lbound - sd.include*M0$rs) & M0$rm < (ubound + sd.include*M0$rs )),]
-OUT  <- M0[which(M0$rm < (lbound + sd.include*M0$rs) | M0$rm > (ubound - sd.include*M0$rs )),]
+IN  <- MM %>%
+	sample_frac(sam.prop) %>%
+	filter(rm > lbound, rm < ubound) %>%
+	mutate(id = 1:n())
 
-IN$id  <- 1:nrow(IN)
-OUT$id <- 1:nrow(OUT)
+OUT <- MM %>%
+	sample_frac(sam.prop) %>%
+	filter(rm < lbound | rm > ubound) %>%
+	mutate(id = 1:n())
 
 # Text naming the data.frame to use
 USE <- "IN"
@@ -84,28 +80,28 @@ shape <- 20
 USE.w <- melt(get(USE), measure.vars=c("M.WP","V.WP","M.WC","V.WC") )
 USE.e <- melt(get(USE), measure.vars=c("M.EE","V.EE","M.WE0","V.WE0") )
 
-USE.w$variable  <-  ifelse(USE.w$variable == "M.WP" , "Mean Expected Welfare Proportion",
-					ifelse(USE.w$variable == "V.WP" , "Variance of Expected Welfare Proportion",
-					ifelse(USE.w$variable == "M.WC" , "Mean Expected Welfare Surplus",
-													  "Variance of Expected Welfare Surplus")
+USE.w$variable  <-  ifelse(USE.w$variable == "M.WP" , "A: Mean Expected Welfare Proportion",
+					ifelse(USE.w$variable == "V.WP" , "B: Variance of Expected Welfare Proportion",
+					ifelse(USE.w$variable == "M.WC" , "C: Mean Expected Welfare Surplus",
+													  "D: Variance of Expected Welfare Surplus")
 					))
 
-USE.e$variable  <-  ifelse(USE.e$variable == "M.EE" , "Mean Expected Number of Errors",
-					ifelse(USE.e$variable == "V.EE" , "Variance of Expected Number of Errors",
-					ifelse(USE.e$variable == "M.WE0", "Mean Expected Proportion of No Error Choices",
-													  "Variance of Expected Proportion of No Error Choices")
+USE.e$variable  <-  ifelse(USE.e$variable == "M.EE" , "A: Mean Expected Number of Errors",
+					ifelse(USE.e$variable == "V.EE" , "B: Variance of Expected Number of Errors",
+					ifelse(USE.e$variable == "M.WE0", "C: Mean Expected Proportion of No Error Choices",
+													  "D: Variance of Expected Proportion of No Error Choices")
 					))
 
 
-USE.w$variable <- factor(USE.w$variable, levels=c(	"Mean Expected Welfare Proportion",                              											  
-													"Variance of Expected Welfare Proportion",
-													"Mean Expected Welfare Surplus",
-													"Variance of Expected Welfare Surplus"))
+USE.w$variable <- factor(USE.w$variable, levels=c(	"A: Mean Expected Welfare Proportion",                              											  
+													"B: Variance of Expected Welfare Proportion",
+													"C: Mean Expected Welfare Surplus",
+													"D: Variance of Expected Welfare Surplus"))
 
-USE.e$variable <- factor(USE.e$variable, levels=c(	"Mean Expected Number of Errors",
-													"Variance of Expected Number of Errors",
-													"Mean Expected Proportion of No Error Choices",
-													"Variance of Expected Proportion of No Error Choices"))
+USE.e$variable <- factor(USE.e$variable, levels=c(	"A: Mean Expected Number of Errors",
+													"B: Variance of Expected Number of Errors",
+													"C: Mean Expected Proportion of No Error Choices",
+													"D: Variance of Expected Proportion of No Error Choices"))
 													
 
 # What are the parameter names
@@ -147,7 +143,7 @@ getPlotted <- function(plot){
 	leg.title.vjust <- -100
 
 	leg.text.size   <- 14
-	leg.text.angle  <- 45
+	leg.text.angle  <- 22.5
 	leg.position    <- "right"
 	leg.direction	<- "horizontal"
 	leg.direction	<- "vertical"
@@ -155,15 +151,15 @@ getPlotted <- function(plot){
 	leg.key.width   <- .25
 
 	x.title <- ifelse(x.par=="rm", "Mean of CRRA",
-			   ifelse(x.par=="rs", "Standard Deviation of CRRA",
-			   ifelse(x.par=="um", "Mean of Lambda","Standard Deviation of Lamda")))
+			   ifelse(x.par=="rs", "Standard Deviation\nof CRRA",
+			   ifelse(x.par=="um", "Mean of Lambda","Standard Deviation\nof Lamda")))
 
 	x.title.size <- 24
 
 
 	leg.title <- ifelse(s.par=="rm", "Mean of CRRA",
-                 ifelse(s.par=="rs", "Standard Deviation of CRRA",
-                 ifelse(s.par=="um", "Mean of Lambda","Standard Deviation of Lamda")))
+                 ifelse(s.par=="rs", "Standard Deviation\nof CRRA",
+                 ifelse(s.par=="um", "Mean of Lambda","Standard Deviation\nof Lamda")))
 
 	fac.size <- 24
 
@@ -199,7 +195,7 @@ getPlotted <- function(plot){
 
 	fname <- paste("../data/agg-plots/",dat,"-",x.par,".jpg",sep="")
 
-	ggsave(filename=fname, plot=p, width=w, height=h, units="in",scale=save.scale )
+#	ggsave(filename=fname, plot=p, width=w, height=h, units="in",scale=save.scale )
 
 	return(ret)
 
