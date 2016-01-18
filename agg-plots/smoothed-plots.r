@@ -7,7 +7,6 @@ library(ggplot2)
 library(grid)
 library(reshape2)
 library(parallel)
-library(gsg)
 
 cores <- detectCores()
 
@@ -20,7 +19,6 @@ MM <- tbl_df(MM)
 
 # Don't always want to use it all, there is tons of data
 sam.prop <- 1
-#sam.prop <- 1
 
 # Bounds for the means of data
 lbound <- -1.7134
@@ -167,7 +165,7 @@ getPlotted <- function(plot){
 	fac.size <- 24
 
 	# Split the dataset up in a few ways to get multiple smoothed lines
-	s.num <- 4
+	s.num <- 5
 
 	data <- data %>% 
 			mutate_(.dots=setNames(paste0("ntile(",s.par,",",s.num,")"),"bin"))
@@ -177,11 +175,23 @@ getPlotted <- function(plot){
 	p <- qplot()
 	for( i in 1:s.num){
 		#p <- p + geom_smooth(data=splits[[i]],stat="smooth", method="gam", aes_string(x=x.par,y="value"), span=0.01 , formula=y~s(x^3) ) 
-		span <- .001
-		nn <- floor(nrow(splits[[i]]) * span)
-		p <- p + stat_smooth(data=splits[[i]],geom="smooth", method="gam", aes_string(x=x.par,y="value"), n=nn , formula=y~s(x^3) ,color=colors[i]) 
+		p <- p + stat_smooth(data=splits[[i]],geom="smooth", method="loess", aes_string(x=x.par,y="value"), span=0.15 , formula=y~x^3 ,color=(i)) 
 	}
 	p <- p + facet_wrap( facets=~variable, ncol=2, scale="free_y")
+
+#	# gather the plot layers
+#	p <- ggplot(data=data, aes_string(x=x.par))
+#	p <- p + scale_color_gradientn(name=leg.title,space="Lab",colours=colors,limits=limits,breaks=breaks) + 
+#	  	      scale_fill_gradientn(name=leg.title,space="Lab",colours=colors,limits=limits,breaks=breaks)
+#	#p <- p + geom_point(shape=shape, alpha=alph, aes_string(y="value",color=s.par,fill=s.par) )
+#
+#	for( i in 1:s.num){
+#		p <- p + geom_smooth(data=splits[[i]],stat="smooth", method="gam", aes_string(x=x.par,y="value"), span=0.9 , formula=y~s(x^2) ) 
+#	}
+#
+#	#p <- p + geom_smooth(stat="smooth", span=.1, aes_string(y="value",color="bin") )
+#
+#	p <- p + facet_wrap( facets=~variable, ncol=2, scale="free_y")
 	p <- p + labs(x=x.title,y=NULL)
 	p <- p + theme(legend.title=element_text(size=leg.title.size,vjust=.9),
 					legend.text=element_text(size=leg.text.size,angle=leg.text.angle),
@@ -206,36 +216,17 @@ getPlotted <- function(plot){
 
 	save.scale <- 3
 
-	fname <- paste("../data/agg-plots/Smooth",span,"-",dat,"-",x.par,".jpg",sep="")
+	fname <- paste("../data/agg-plots/Smooth-",dat,"-",x.par,".jpg",sep="")
 
-#	ggsave(filename=fname, plot=p, width=w, height=h, units="in",scale=save.scale )
+	#ggsave(filename=fname, plot=p, width=w, height=h, units="in",scale=save.scale )
 
 	return(ret)
 
 }
 
 #plots <- mclapply(to.plot,getPlotted,mc.cores=cores)
+#plots <- mclapply(to.plot,getPlotted,mc.cores=2)
 plots <- lapply(to.plot,getPlotted)
 
 plots[[1]]
 
-IN <- arrange(IN,rm)
-
-oo <- loess( M.EE ~ rm, degree=2,data=IN)
-oo <- predict(oo, newdata=IN$rm)
-pp <- diff(oo)
-
-pp <- c(NA,pp)
-
-ldat <- data.frame(x=IN$rm,y=IN$M.EE,l=oo,d=pp)
-
-p <- ggplot(data=ldat, aes(x=x))
-#p <- p + geom_point(shape=20, aes(y=y) )
-q <- p + geom_smooth(aes(y=d,color="red"),method="loess")
-p <- p + geom_line(aes(y=l,color="red"))
-
-p
-q
-
-#oo <- gam(M.EE ~ s(rm^3),data=IN)
-#pp <- gam.gradients(oo,phenotype="rm",parallel="multicore",ncpus=8)
