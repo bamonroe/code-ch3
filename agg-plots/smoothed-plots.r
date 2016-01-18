@@ -165,7 +165,7 @@ getPlotted <- function(plot){
 	fac.size <- 24
 
 	# Split the dataset up in a few ways to get multiple smoothed lines
-	s.num <- 5
+	s.num <- 4
 
 	data <- data %>% 
 			mutate_(.dots=setNames(paste0("ntile(",s.par,",",s.num,")"),"bin"))
@@ -175,7 +175,7 @@ getPlotted <- function(plot){
 	p <- qplot()
 	for( i in 1:s.num){
 		#p <- p + geom_smooth(data=splits[[i]],stat="smooth", method="gam", aes_string(x=x.par,y="value"), span=0.01 , formula=y~s(x^3) ) 
-		p <- p + stat_smooth(data=splits[[i]],geom="smooth", method="loess", aes_string(x=x.par,y="value"), span=0.15 , formula=y~x^3 ,color=(i)) 
+		p <- p + stat_smooth(data=splits[[i]],geom="smooth", method="loess", aes_string(x=x.par,y="value"), span=0.1 , formula=y~x^3 ,color=colors[i]) 
 	}
 	p <- p + facet_wrap( facets=~variable, ncol=2, scale="free_y")
 
@@ -218,15 +218,15 @@ getPlotted <- function(plot){
 
 	fname <- paste("../data/agg-plots/Smooth-",dat,"-",x.par,".jpg",sep="")
 
-	#ggsave(filename=fname, plot=p, width=w, height=h, units="in",scale=save.scale )
+	ggsave(filename=fname, plot=p, width=w, height=h, units="in",scale=save.scale )
 
 	return(ret)
 
 }
 
 #plots <- mclapply(to.plot,getPlotted,mc.cores=cores)
-#plots <- mclapply(to.plot,getPlotted,mc.cores=2)
-plots <- lapply(to.plot,getPlotted)
+plots <- mclapply(to.plot,getPlotted,mc.cores=2)
+#plots <- lapply(to.plot,getPlotted)
 
-plots[[1]]
+#plots[[1]]
 
