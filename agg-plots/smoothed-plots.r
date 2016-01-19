@@ -10,9 +10,6 @@ library(parallel)
 
 cores <- detectCores()
 
-## Haven't use, but will likely use
-library(np)
-
 # Grab our data
 load("../data/agg-dat/Agg1Mil-S10k.Rda")
 MM <- tbl_df(MM)
@@ -34,10 +31,13 @@ IN  <- MM %>%
 	filter(rm > lbound, rm < ubound) %>%
 	mutate(id = 1:n())
 
-OUT <- MM %>%
-	sample_frac(sam.prop) %>%
-	filter(rm < lbound | rm > ubound) %>%
-	mutate(id = 1:n())
+#OUT <- MM %>%
+#	sample_frac(sam.prop) %>%
+#	filter(rm < lbound | rm > ubound) %>%
+#	mutate(id = 1:n())
+
+# We no longer need the full dataset, it just wastes memory
+rm(MM)
 
 # Functionally determine the alpha channel for the points
 alph <- (.75 / (exp(sam.prop))) 
@@ -106,6 +106,9 @@ USE.e$variable <- factor(USE.e$variable, levels=c(	"Mean Expected Number of Erro
 													"Mean Expected Proportion of No Error Choices",
 													"Variance of Expected Proportion of No Error Choices"))
 													
+
+# We now no longer need the "USE" dataframe, again it just wastes ram to keep it around
+rm(list=USE)
 
 # What are the parameter names
 names   <- c("rm","rs","um","us")
@@ -206,19 +209,7 @@ getPlotted <- function(plot){
 	# Return the plot to the list
 	dat <- ifelse(as.character(plot[3])=="USE.w","Wel","Err")
 
-	name <- paste(x.par,"-",dat,sep="")
-
 	ret <- c(name=list(x.par,dat,p))
-
-	# Diminetions of plots
-	h <- 8.50 - (.79*2) - .5	# Page is 8.5 x 11 inches, margins are .79 inches
-	w <- 11.0 - (.79*2)
-
-	save.scale <- 3
-
-	fname <- paste("../data/agg-plots/Smooth-",dat,"-",x.par,".jpg",sep="")
-
-	ggsave(filename=fname, plot=p, width=w, height=h, units="in",scale=save.scale )
 
 	return(ret)
 
@@ -227,6 +218,26 @@ getPlotted <- function(plot){
 #plots <- mclapply(to.plot,getPlotted,mc.cores=cores)
 plots <- mclapply(to.plot,getPlotted,mc.cores=2)
 #plots <- lapply(to.plot,getPlotted)
+
+# another function to do saving
+saver <- function(x){
+	# Diminetions of plots
+	h <- 8.50 - (.79*2) - .5	# Page is 8.5 x 11 inches, margins are .79 inches
+	w <- 11.0 - (.79*2)
+
+	save.scale <- 3
+
+	x.par <- x[[1]]
+	dat <- x[[2]]
+
+	fname <- paste("../data/agg-plots/",dat,"-",x.par,".jpg",sep="")
+
+	ggsave(filename=fname, plot=x[[3]], width=w, height=h, units="in",scale=save.scale )
+
+}
+
+# Running this in parallel seems to be possible, though it uses about a Gig of ram per core
+mclapply(plots,saver,mc.cores=2)
 
 #plots[[1]]
 
