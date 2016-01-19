@@ -202,7 +202,7 @@ saver <- function(x){
 	x.par <- x[[1]]
 	dat <- x[[2]]
 
-	fname <- paste("../data/agg-plots/tt",dat,"-",x.par,".jpg",sep="")
+	fname <- paste("../data/agg-plots/",dat,"-",x.par,".jpg",sep="")
 
 	ggsave(filename=fname, plot=x[[3]], width=w, height=h, units="in",scale=save.scale )
 
