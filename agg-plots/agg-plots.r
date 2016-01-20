@@ -10,12 +10,15 @@ library(parallel)
 
 cores <- detectCores()
 
+source("../indiff/indifference.r")
+#indiff contains the indifference points of the 10 lotteries
+
 # Grab our data
 load("../data/agg-dat/Agg1Mil-S10k.Rda")
 MM <- tbl_df(MM)
 
 # Don't always want to use it all, there is tons of data
-sam.prop <- 1
+sam.prop <- .05
 
 # Bounds for the means of data
 lbound <- -1.7134
@@ -166,6 +169,11 @@ getPlotted <- function(plot){
 	p <- p + scale_color_gradientn(name=leg.title,space="Lab",colours=colors,limits=limits,breaks=breaks) + 
 	  	      scale_fill_gradientn(name=leg.title,space="Lab",colours=colors,limits=limits,breaks=breaks)
 	p <- p + geom_point(shape=shape, alpha=alph, aes_string(y="value",color=s.par,fill=s.par) )
+
+	if(data=="USE.w" & x.par == "rm"){
+		p <- p + geom_vline(xintercept=indiff,linetype="dotted")
+	}
+
 	p <- p + facet_wrap( facets=~variable, ncol=2, scale="free_y")
 	p <- p + labs(x=x.title,y=NULL)
 	p <- p + theme(legend.title=element_text(size=leg.title.size,vjust=.9),
@@ -209,6 +217,6 @@ saver <- function(x){
 }
 
 # Running this in parallel seems to be possible, though it uses about a Gig of ram per core
-mclapply(plots,saver,mc.cores=cores)
+#mclapply(plots,saver,mc.cores=cores)
 
-plots[[1]][[3]]
+plots[[5]][[3]]
