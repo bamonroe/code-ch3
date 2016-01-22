@@ -10,12 +10,15 @@ library(parallel)
 
 cores <- detectCores()
 
+# Do I want to do these operations in parallel?
+use.parallel <- F
+
 # Grab our data
 load("../data/agg-dat/Agg1Mil-S10k.Rda")
 MM <- tbl_df(MM)
 
 # Don't always want to use it all, there is tons of data
-sam.prop <- .05
+sam.prop <- 1
 
 # Bounds for the means of data
 lbound <- -1.7134
@@ -157,7 +160,7 @@ getPlotted <- function(plot){
 
 	x.title <- ifelse(x.par=="rm", "\nMean of CRRA",
 			   ifelse(x.par=="rs", "\nStandard Deviation of CRRA",
-			   ifelse(x.par=="um", "\nMean of Lambda","Standard Deviation of Lamda")))
+			   ifelse(x.par=="um", "\nMean of Lambda","\nStandard Deviation of Lamda")))
 
 	x.title.size <- 36
 
@@ -179,25 +182,10 @@ getPlotted <- function(plot){
 
 	p <- qplot()
 	for( i in 1:s.num){
-		#p <- p + geom_smooth(data=splits[[i]],stat="smooth", method="gam", aes_string(x=x.par,y="value"), span=0.01 , formula=y~s(x^3) ) 
-		#p <- p + stat_smooth(data=splits[[i]],geom="smooth", method="loess", aes_string(x=x.par,y="value"), span=0.1 , formula=y~x^3 ,color=colors[i]) 
 		p <- p + geom_smooth(data=splits[[i]],stat="smooth", method="loess", aes_string(x=x.par,y="value"), span=0.1 , formula=y~x^3 ,color=colors[i]) 
 	}
 	p <- p + facet_wrap( facets=~variable, ncol=2, scale="free_y")
 
-#	# gather the plot layers
-#	p <- ggplot(data=data, aes_string(x=x.par))
-#	p <- p + scale_color_gradientn(name=leg.title,space="Lab",colours=colors,limits=limits,breaks=breaks) + 
-#	  	      scale_fill_gradientn(name=leg.title,space="Lab",colours=colors,limits=limits,breaks=breaks)
-#	#p <- p + geom_point(shape=shape, alpha=alph, aes_string(y="value",color=s.par,fill=s.par) )
-#
-#	for( i in 1:s.num){
-#		p <- p + geom_smooth(data=splits[[i]],stat="smooth", method="gam", aes_string(x=x.par,y="value"), span=0.9 , formula=y~s(x^2) ) 
-#	}
-#
-#	#p <- p + geom_smooth(stat="smooth", span=.1, aes_string(y="value",color="bin") )
-#
-#	p <- p + facet_wrap( facets=~variable, ncol=2, scale="free_y")
 	p <- p + labs(x=x.title,y=NULL)
 	p <- p + theme(legend.title=element_text(size=leg.title.size,vjust=.9),
 					legend.text=element_text(size=leg.text.size,angle=leg.text.angle),
@@ -219,9 +207,14 @@ getPlotted <- function(plot){
 
 }
 
-#plots <- mclapply(to.plot,getPlotted,mc.cores=cores)
-plots <- mclapply(to.plot,getPlotted,mc.cores=2)
-#plots <- lapply(to.plot,getPlotted)
+if(use.parallel) {
+	plots <- mclapply(to.plot,getPlotted,mc.cores=cores)
+} else {
+	plots <- lapply(to.plot,getPlotted)
+}
+
+#No longer need the other dataframes either
+rm(list=c("USE.w","USE.e"))
 
 # another function to do saving
 saver <- function(x){
@@ -234,15 +227,17 @@ saver <- function(x){
 	x.par <- x[[1]]
 	dat <- x[[2]]
 
-	fname <- paste("../data/agg-plots/",dat,"-",x.par,".jpg",sep="")
+	fname <- paste("../data/agg-plots/S",dat,"-",x.par,".jpg",sep="")
 
 	ggsave(filename=fname, plot=x[[3]], width=w, height=h, units="in",scale=save.scale )
 
 }
 
-# Running this in parallel seems to be possible, though it uses about a Gig of ram per core
-mclapply(plots,saver,mc.cores=2)
-#lapply(plots,saver)
+if(use.parallel) {
+	mclapply(plots,saver,mc.cores=cores)
+} else {
+	lapply(plots,saver)
+}
 
 #plots[[1]]
 

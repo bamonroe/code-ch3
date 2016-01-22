@@ -13,12 +13,15 @@ cores <- detectCores()
 source("../indiff/indifference.r")
 #indiff contains the indifference points of the 10 lotteries
 
+# Do I want to do these operations in parallel?
+use.parallel <- F
+
 # Grab our data
 load("../data/agg-dat/Agg1Mil-S10k.Rda")
 MM <- tbl_df(MM)
 
 # Don't always want to use it all, there is tons of data
-sam.prop <- .05
+sam.prop <- .1
 
 # Bounds for the means of data
 lbound <- -1.7134
@@ -87,22 +90,22 @@ USE.w <- melt(get(USE), measure.vars=c("M.WP","V.WP","M.WC","V.WC") )
 USE.e <- melt(get(USE), measure.vars=c("M.EE","V.EE","M.WE0","V.WE0") )
 
 USE.w$variable  <-  ifelse(USE.w$variable == "M.WP" , "A) Mean Expected Welfare Proportion",
-					ifelse(USE.w$variable == "V.WP" , "B) Variance of Expected Welfare Proportion",
+					ifelse(USE.w$variable == "V.WP" , "B) Var. of Expected Welfare Proportion",
 					ifelse(USE.w$variable == "M.WC" , "C) Mean Expected Welfare Surplus",
-													  "D) Variance of Expected Welfare Surplus") ))
+													  "D) Var. of Expected Welfare Surplus") ))
 USE.e$variable  <-  ifelse(USE.e$variable == "M.EE" , "A) Mean Expected Number of Errors",
-					ifelse(USE.e$variable == "V.EE" , "B) Variance of Expected Number of Errors",
+					ifelse(USE.e$variable == "V.EE" , "B) Var. of Expected Number of Errors",
 					ifelse(USE.e$variable == "M.WE0", "C) Mean Expected Proportion of No Error Choices",
-													  "D) Variance of Expected Proportion of No Error Choices") ))
+													  "D) Var. of Expected Proportion of No Error Choices") ))
 
 USE.w$variable <- factor(USE.w$variable, levels=c(	"A) Mean Expected Welfare Proportion",                              											  
-													"B) Variance of Expected Welfare Proportion",
+													"B) Var. of Expected Welfare Proportion",
 													"C) Mean Expected Welfare Surplus",
-													"D) Variance of Expected Welfare Surplus"))
+													"D) Var. of Expected Welfare Surplus"))
 USE.e$variable <- factor(USE.e$variable, levels=c(	"A) Mean Expected Number of Errors",
-													"B) Variance of Expected Number of Errors",
+													"B) Var. of Expected Number of Errors",
 													"C) Mean Expected Proportion of No Error Choices",
-													"D) Variance of Expected Proportion of No Error Choices"))
+													"D) Var. of Expected Proportion of No Error Choices"))
 
 # We now no longer need the "USE" dataframe, again it just wastes ram to keep it around
 rm(list=USE)
@@ -140,10 +143,10 @@ getPlotted <- function(plot){
 
 
 	# Values for the various plots
-	leg.title.size  <- 22
+	leg.title.size  <- 30
 	leg.title.vjust <- -100
 
-	leg.text.size   <- 14
+	leg.text.size   <- 24
 	leg.text.angle  <- 22.5
 	leg.position    <- "right"
 	leg.direction	<- "horizontal"
@@ -151,18 +154,20 @@ getPlotted <- function(plot){
 	leg.key.height  <- 1
 	leg.key.width   <- .25
 
-	x.title <- ifelse(x.par=="rm", "Mean of CRRA",
-			   ifelse(x.par=="rs", "Standard Deviation of CRRA",
-			   ifelse(x.par=="um", "Mean of Lambda","Standard Deviation of Lamda")))
+	x.title <- ifelse(x.par=="rm", "\nMean of CRRA",
+			   ifelse(x.par=="rs", "\nStandard Deviation of CRRA",
+			   ifelse(x.par=="um", "\nMean of Lambda","Standard Deviation of Lamda")))
 
-	x.title.size <- 24
+	x.title.size <- 36
 
 
-	leg.title <- ifelse(s.par=="rm", "Mean of CRRA\n",
-                 ifelse(s.par=="rs", "Standard Deviation\nof CRRA\n",
-                 ifelse(s.par=="um", "Mean of Lambda\n","Standard Deviation\nof Lamda\n")))
+	leg.title <- ifelse(s.par=="rm", "Mean of CRRA\n\n",
+                 ifelse(s.par=="rs", "Standard Deviation\nof CRRA\n\n",
+                 ifelse(s.par=="um", "Mean of Lambda\n","Standard Deviation\nof Lamda\n\n")))
 
-	fac.size <- 24
+	fac.size <- 36
+
+	axis.text.size = 24
 
 	# gather the plot layers
 	p <- ggplot(data=get(data), aes_string(x=x.par))
@@ -183,6 +188,7 @@ getPlotted <- function(plot){
 					legend.key.height=unit(leg.key.height,"in"),
 					legend.key.width=unit(leg.key.width,"in"),
 					axis.title.x=element_text(size=x.title.size),
+					axis.text=element_text(size=axis.text.size),
 					strip.text=element_text(size=fac.size)
 					)
 
@@ -197,7 +203,11 @@ getPlotted <- function(plot){
 
 # Can't seem to trim "to.plot" enough to allow it to be parallelized, though it runs quick enough
 # that this doesn't seem necessary anyway
-plots <- lapply(to.plot,getPlotted)
+if(use.parallel) {
+	plots <- mclapply(to.plot,getPlotted,mc.cores=cores)
+} else {
+	plots <- lapply(to.plot,getPlotted)
+}
 
 # another function to do saving
 saver <- function(x){
@@ -216,7 +226,14 @@ saver <- function(x){
 
 }
 
+rm(USE.w)
+rm(USE.e)
+
 # Running this in parallel seems to be possible, though it uses about a Gig of ram per core
-#mclapply(plots,saver,mc.cores=cores)
+if(use.parallel) {
+	mclapply(plots,saver,mc.cores=cores)
+} else {
+	lapply(plots,saver)
+}
 
 plots[[5]][[3]]
