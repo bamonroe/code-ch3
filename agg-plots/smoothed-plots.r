@@ -15,7 +15,7 @@ load("../data/agg-dat/Agg1Mil-S10k.Rda")
 MM <- tbl_df(MM)
 
 # Don't always want to use it all, there is tons of data
-sam.prop <- 1
+sam.prop <- .05
 
 # Bounds for the means of data
 lbound <- -1.7134
@@ -144,28 +144,30 @@ getPlotted <- function(plot){
 	# Values for the various plots
 	title <- "This is a title\n\n\n"
 
-	leg.title.size  <- 22
+	leg.title.size  <- 30
 	leg.title.vjust <- -100
 
-	leg.text.size   <- 14
-	leg.text.angle  <- 45
+	leg.text.size   <- 24
+	leg.text.angle  <- 22.5
 	leg.position    <- "right"
 	leg.direction	<- "horizontal"
 	leg.direction	<- "vertical"
 	leg.key.height  <- 1
 	leg.key.width   <- .25
 
-	x.title <- ifelse(x.par=="rm", "Mean of CRRA",
-			   ifelse(x.par=="rs", "Standard Deviation of CRRA",
-			   ifelse(x.par=="um", "Mean of Lambda","Standard Deviation of Lamda")))
+	x.title <- ifelse(x.par=="rm", "\nMean of CRRA",
+			   ifelse(x.par=="rs", "\nStandard Deviation of CRRA",
+			   ifelse(x.par=="um", "\nMean of Lambda","Standard Deviation of Lamda")))
 
-	x.title.size <- 24
+	x.title.size <- 36
 
-	leg.title <- ifelse(s.par=="rm", "Mean of CRRA",
-                 ifelse(s.par=="rs", "Standard Deviation of CRRA",
-                 ifelse(s.par=="um", "Mean of Lambda","Standard Deviation of Lamda")))
+	leg.title <- ifelse(s.par=="rm", "Mean of CRRA\n\n",
+                 ifelse(s.par=="rs", "Standard Deviation\nof CRRA\n\n",
+                 ifelse(s.par=="um", "Mean of Lambda","Standard Deviation\nof Lamda\n\n")))
 
-	fac.size <- 24
+	fac.size <- 36
+
+	axis.text.size = 24
 
 	# Split the dataset up in a few ways to get multiple smoothed lines
 	s.num <- 4
@@ -178,7 +180,8 @@ getPlotted <- function(plot){
 	p <- qplot()
 	for( i in 1:s.num){
 		#p <- p + geom_smooth(data=splits[[i]],stat="smooth", method="gam", aes_string(x=x.par,y="value"), span=0.01 , formula=y~s(x^3) ) 
-		p <- p + stat_smooth(data=splits[[i]],geom="smooth", method="loess", aes_string(x=x.par,y="value"), span=0.1 , formula=y~x^3 ,color=colors[i]) 
+		#p <- p + stat_smooth(data=splits[[i]],geom="smooth", method="loess", aes_string(x=x.par,y="value"), span=0.1 , formula=y~x^3 ,color=colors[i]) 
+		p <- p + geom_smooth(data=splits[[i]],stat="smooth", method="loess", aes_string(x=x.par,y="value"), span=0.1 , formula=y~x^3 ,color=colors[i]) 
 	}
 	p <- p + facet_wrap( facets=~variable, ncol=2, scale="free_y")
 
@@ -203,6 +206,7 @@ getPlotted <- function(plot){
 					legend.key.height=unit(leg.key.height,"in"),
 					legend.key.width=unit(leg.key.width,"in"),
 					axis.title.x=element_text(size=x.title.size),
+					axis.text=element_text(size=axis.text.size),
 					strip.text=element_text(size=fac.size)
 					)
 
@@ -238,6 +242,7 @@ saver <- function(x){
 
 # Running this in parallel seems to be possible, though it uses about a Gig of ram per core
 mclapply(plots,saver,mc.cores=2)
+#lapply(plots,saver)
 
 #plots[[1]]
 
