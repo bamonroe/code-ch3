@@ -189,7 +189,7 @@ getPlotted <- function(plot){
 		p <- p + geom_smooth(data=splits[[i]],stat="smooth", method="loess", aes_string(x=x.par,y="value"), span=0.1 , formula=y~x^3 ,color=colors[i]) 
 	}
 
-	if(data=="USE.w" & x.par == "rm"){
+	if( x.par == "rm" ){
 		p <- p + geom_vline(xintercept=indiff,linetype="dotted")
 	}
 
@@ -217,8 +217,10 @@ getPlotted <- function(plot){
 }
 
 if(use.parallel) {
+	print(paste("Using parallel with",cores,"cores"))
 	plots <- mclapply(to.plot,getPlotted,mc.cores=cores)
 } else {
+	print("Not using parallel")
 	plots <- lapply(to.plot,getPlotted)
 }
 
@@ -236,15 +238,17 @@ saver <- function(x){
 	x.par <- x[[1]]
 	dat <- x[[2]]
 
-	fname <- paste("../data/agg-plots/S",dat,"-",x.par,".jpg",sep="")
+	fname <- paste("../data/agg-plots/S-",dat,"-",x.par,".jpg",sep="")
 
 	ggsave(filename=fname, plot=x[[3]], width=w, height=h, units="in",scale=save.scale )
 
 }
 
 if(use.parallel) {
+	print(paste("Using parallel with",cores,"cores"))
 	mclapply(plots,saver,mc.cores=cores)
 } else {
+	print("Not using parallel")
 	lapply(plots,saver)
 }
 
