@@ -10,6 +10,9 @@ library(parallel)
 
 cores <- detectCores()
 
+source("../indiff/indifference.r")
+#indiff contains the indifference points of the 10 lotteries
+
 # Do I want to do these operations in parallel?
 use.parallel <- F
 
@@ -181,9 +184,15 @@ getPlotted <- function(plot){
 	splits <- dlply(data,"bin")
 
 	p <- qplot()
+
 	for( i in 1:s.num){
 		p <- p + geom_smooth(data=splits[[i]],stat="smooth", method="loess", aes_string(x=x.par,y="value"), span=0.1 , formula=y~x^3 ,color=colors[i]) 
 	}
+
+	if(data=="USE.w" & x.par == "rm"){
+		p <- p + geom_vline(xintercept=indiff,linetype="dotted")
+	}
+
 	p <- p + facet_wrap( facets=~variable, ncol=2, scale="free_y")
 
 	p <- p + labs(x=x.title,y=NULL)
