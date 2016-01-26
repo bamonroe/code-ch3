@@ -50,7 +50,7 @@ alph <- (.75 / (exp(sam.prop)))
 #alph <- .35
 	
 # Text naming the data.frame to use
-USE <- "IN"
+to.USE <- "IN"
 
 # Colors
 cy  <-"#32b0e6" # Cyan
@@ -86,8 +86,8 @@ colors <- color.4.4
 shape <- 20
 
 # Faceting, 
-USE.w <- melt(get(USE), measure.vars=c("M.WP","V.WP","M.WC","V.WC") )
-USE.e <- melt(get(USE), measure.vars=c("M.EE","V.EE","M.WE0","V.WE0") )
+USE.w <- tbl_df(melt(get(to.USE), measure.vars=c("M.WP","V.WP","M.WC","V.WC") ))
+USE.e <- tbl_df(melt(get(to.USE), measure.vars=c("M.EE","V.EE","M.WE0","V.WE0") ))
 
 USE.w$variable  <-  ifelse(USE.w$variable == "M.WP" , "Mean Expected Welfare Proportion",
 					ifelse(USE.w$variable == "V.WP" , "Variance of Expected Welfare Proportion",
@@ -111,10 +111,42 @@ USE.e$variable <- factor(USE.e$variable, levels=c(	"Mean Expected Number of Erro
 													"Variance of Expected Number of Errors",
 													"Mean Expected Proportion of No Error Choices",
 													"Variance of Expected Proportion of No Error Choices"))
+
+USE.e <- USE.e %>%
+	select(rm,rs,um,us,variable,value)
 													
+USE.w <- USE.w %>%
+	select(rm,rs,um,us,variable,value)
+
+USE <- USE.w %>%
+	select(rm,rs,um,us)
+
+USE$W.value <- USE.w$value
+USE$E.value <- USE.e$value
+
+USE$W.variable <- USE.w$variable
+USE$E.variable <- USE.e$variable
 
 # We now no longer need the "USE" dataframe, again it just wastes ram to keep it around
-rm(list=USE)
+rm(list=to.USE)
+
+USE.e <- USE.e %>%
+	select(rm,rs,um,us,variable,value)
+													
+USE.w <- USE.w %>%
+	select(rm,rs,um,us,variable,value)
+
+USE <- USE.w %>%
+	select(rm,rs,um,us)
+
+USE$W.value <- USE.w$value
+USE$E.value <- USE.e$value
+
+USE$W.variable <- USE.w$variable
+USE$E.variable <- USE.e$variable
+
+# We now no longer need the "USE" dataframe, again it just wastes ram to keep it around
+rm(list=c("USE.w","USE.e"))
 
 # What are the parameter names
 names   <- c("rm","rs","um","us")
@@ -123,7 +155,7 @@ s.names <- c("rs","rm","us","um")
 names   <- rep(names,2)
 s.names <- rep(s.names,2)
 
-p.t <- c(rep("USE.e",4),rep("USE.w",4))
+p.t <- c(rep("E",4),rep("W",4))
 
 to.plot <- data.frame(rbind(names,s.names,p.t))
 
@@ -131,11 +163,11 @@ getPlotted <- function(plot){
     
     x.par <- as.character(plot[1])
     s.par <- as.character(plot[2])
-    data  <- get(as.character(plot[3]))
+    dtype <- as.character(plot[3])
 
 	# Reference point for scale
-	mid.ref <- (max(data[[s.par]]) - ((max(data[[s.par]])-(min(data[[s.par]])))/2))
-	limits <- c(min(data[[s.par]]), max(data[[s.par]]))
+	mid.ref <- (max(USE[[s.par]]) - ((max(USE[[s.par]])-(min(USE[[s.par]])))/2))
+	limits <- c(min(USE[[s.par]]), max(USE[[s.par]]))
 
 	q.dist <- (limits[2] - mid.ref) / 2
 
@@ -178,22 +210,22 @@ getPlotted <- function(plot){
 	# Split the dataset up in a few ways to get multiple smoothed lines
 	s.num <- 4
 
-	data <- data %>% 
+	USE.n <- USE %>% 
 			mutate_(.dots=setNames(paste0("ntile(",s.par,",",s.num,")"),"bin"))
 
-	splits <- dlply(data,"bin")
+	splits <- dlply(USE.n,"bin")
 
 	p <- qplot()
 
 	for( i in 1:s.num){
-		p <- p + geom_smooth(data=splits[[i]],stat="smooth", method="loess", aes_string(x=x.par,y="value"), span=0.1 , formula=y~x^3 ,color=colors[i]) 
+		p <- p + geom_smooth(data=splits[[i]],stat="smooth", method="loess", aes_string(x=x.par,y=paste0(dtype,".value")), span=0.1 , formula=y~x^3 ,color=colors[i]) 
 	}
 
 	if( x.par == "rm" ){
 		p <- p + geom_vline(xintercept=indiff,linetype="dotted")
 	}
 
-	p <- p + facet_wrap( facets=~variable, ncol=2, scale="free_y")
+	p <- p + facet_wrap( facets=paste0(dtype,".variable"), ncol=2, scale="free_y")
 
 	p <- p + labs(x=x.title,y=NULL)
 	p <- p + theme(legend.title=element_text(size=leg.title.size,vjust=.9),
@@ -208,7 +240,7 @@ getPlotted <- function(plot){
 					)
 
 	# Return the plot to the list
-	dat <- ifelse(as.character(plot[3])=="USE.w","Wel","Err")
+	dat <- ifelse(dtype=="W","Wel","Err")
 
 	ret <- c(name=list(x.par,dat,p))
 
@@ -239,6 +271,7 @@ saver <- function(x){
 	dat <- x[[2]]
 
 	fname <- paste("../data/agg-plots/S-",dat,"-",x.par,".jpg",sep="")
+	print(fname)
 
 	ggsave(filename=fname, plot=x[[3]], width=w, height=h, units="in",scale=save.scale )
 
