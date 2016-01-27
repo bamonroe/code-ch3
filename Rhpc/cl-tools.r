@@ -7,39 +7,50 @@ export <- function(...){
 	obj <- list(...)
 
 	if(is.logical(obj[[1]])){
-	if (obj[[1]] == T){
+		if (obj[[1]] == T){
 
-		if(length(obj)>1){
-			for(i in 2:length(obj)){
-				te.len <- length(to.export) + 1
-				to.export[[te.len]] <<- obj[[i]]
+			if(length(obj)>1){
+				for(i in 2:length(obj)){
+					te.len <- length(to.export) + 1
+					to.export[[te.len]] <<- obj[[i]]
+				}
+			} 
+
+			for(i in 1:length(to.export)){
+			
+				# Check for character vectors and existance
+				is.char <- ifelse(is.character(to.export[[i]]),T,F)
+				it.exists <- ifelse( is.char == T && exists(to.export[[i]]),T,F )
+
+				if( !is.char ) 	 stop(paste("Argument",i,"is not a string"))
+				if( !it.exists ) stop(paste("Argument",i,"does not refer to an existing object"))
+
 			}
-		} 
 
-		for(i in 1:length(to.export)){
-		
-			# Check for character vectors and existance
-			is.char <- ifelse(is.character(to.export[[i]]),T,F)
-			it.exists <- ifelse( is.char == T && exists(to.export[[i]]),T,F )
+			to.export <- do.call(c,to.export)
 
-			if( !is.char ) 	 stop(paste("Argument",i,"is not a string"))
-			if( !it.exists ) stop(paste("Argument",i,"does not refer to an existing object"))
+			# IF the value True is passed, conduct the export
+			s.msg <- paste("Starting export of:",to.export)
+			e.msg <- paste("Exported:",to.export)
+
+			print("Starting export of:")
+			print(to.export)
+			Rhpc_Export(cluster.object,to.export)
+			print("Exported:")
+			return(print(to.export))
+
+		} else if(obj[[1]] == F){
+
+			to.export <- list()
+			if(length(obj)>1){
+				for(i in 2:length(obj)){
+					te.len <- length(to.export) + 1
+					to.export[[te.len]] <<- obj[[i]]
+				}
+			} 
 
 		}
-
-		to.export <- do.call(c,to.export)
-
-		# IF the value True is passed, conduct the export
-		s.msg <- paste("Starting export of:",to.export)
-		e.msg <- paste("Exported:",to.export)
-
-		print("Starting export of:")
-		print(to.export)
-		Rhpc_Export(cluster.object,to.export)
-		print("Exported:")
-		return(print(to.export))
-
-	}}
+	}
 
 	for(i in 1:length(obj)){
 	
