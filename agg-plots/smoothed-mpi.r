@@ -201,17 +201,14 @@ getPlotted <- function(plot){
 	s.num <- 4
 
 	USE.n <- USE %>% 
-			select_(.dots=list(x.par,"bin",paste0(dtype,".value"),paste0(dtype,".variable"))) %>%
-			mutate_(.dots=setNames(paste0("ntile(",s.par,",",s.num,")"),"bin")) 
+			mutate_(.dots=setNames(paste0("ntile(",s.par,",",s.num,")"),"bin")) %>%
+			select_(.dots=list(x.par,"bin",paste0(dtype,".value"),paste0(dtype,".variable"))) 
 
-	splits <- dlply(USE.n,"bin")
+	USE.n$bin <- factor(USE.n$bin)
 
-	p <- qplot()
+	p <- ggplot(data=USE.n,aes_string(x=x.par,y=paste0(dtype,".value"),color="bin"))
 
-	for( i in 1:s.num){
-		p <- p + geom_smooth(data=splits[[i]],stat="smooth", method="loess", aes_string(x=x.par,y=paste0(dtype,".value")), span=0.1 , formula=y~x^3 ,color=colors[i]) 
-		splits[[i]] <- 0
-	}
+	p <- p + geom_smooth(stat="smooth", method="loess",  span=0.1 , formula=y~x^2 ) 
 
 	if( x.par == "rm" ){
 		p <- p + geom_vline(xintercept=indiff,linetype="dotted")
