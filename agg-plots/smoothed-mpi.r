@@ -1,6 +1,9 @@
 # Clear All
 rm(list=ls())
 
+# Add in Rhpc support functions
+source("../Rhpc/cl-tools.r")
+
 add.lib <- function(){
 	library(Rhpc)
 	library(plyr)
@@ -13,14 +16,12 @@ add.lib <- function(){
 
 add.lib()
 
-cores <- detectCores()
+#Export for MPI
+export("add.lib")
 
 source("../indiff/indifference.r")
 indiff <- round(indiff,2)
-#indiff contains the indifference points of the 10 lotteries
-
-# Do I want to do these operations in parallel?
-use.parallel <- F
+#indiff contains the indifference points of the 9 lotteries
 
 # Grab our data
 load("../data/agg-dat/Agg1Mil-S10k.Rda")
@@ -30,9 +31,6 @@ MM <- tbl_df(MM)
 sam.prop <- .7
 
 # Bounds for the means of data
-lbound <- -1.7134
-ubound <- 1.3684
-
 lbound <- -1.9
 ubound <- 1.55
 
@@ -84,6 +82,9 @@ color.4.4 <- c(dyo,cy,yo,pur)
 # Colors to use
 colors <- color.4.4
 
+# Export for MPI cluster
+export("colors")
+
 # Faceting, 
 USE.w <- tbl_df(melt(get(to.USE), measure.vars=c("M.WP","V.WP","M.WC","V.WC") ))
 USE.e <- tbl_df(melt(get(to.USE), measure.vars=c("M.EE","V.EE","M.WE0","V.WE0") ))
@@ -129,6 +130,7 @@ USE$E.variable <- USE.e$variable
 # We now no longer need the "USE" dataframe, again it just wastes ram to keep it around
 rm(list=to.USE)
 
+# Aggregate the two melded datasets to reduce RAM
 USE.e <- USE.e %>%
 	select(rm,rs,um,us,variable,value)
 													
@@ -144,6 +146,9 @@ USE$E.value <- USE.e$value
 USE$W.variable <- USE.w$variable
 USE$E.variable <- USE.e$variable
 
+# Need to export USE
+export("USE")
+
 # We now no longer need the "USE" dataframe, again it just wastes ram to keep it around
 rm(list=c("USE.w","USE.e"))
 
@@ -157,6 +162,9 @@ s.names <- rep(s.names,2)
 p.t <- c(rep("E",4),rep("W",4))
 
 to.plot <- data.frame(rbind(names,s.names,p.t))
+
+# Export for MPI
+export("to.plot")
 
 getPlotted <- function(plot){
 
@@ -257,16 +265,15 @@ getPlotted <- function(plot){
 
 }
 
+#Export this for MPI
+export("getPlotted")
+
 # Plot generation is done over MPI, the cost of exporting objects is far outweighed
 # by being able to run the calculations quicker
 
-Rhpc_initialize()
+export(T)
 
-cl <- Rhpc_getHandle(4)
-
-Rhpc_Export(cl,c("to.plot","getPlotted","indiff","colors","USE","add.lib"))
-
-Rhpc_lapply(cl=cl,X=to.plot,FUN=getPlotted)
+m.lapply(X=to.plot,FUN=getPlotted)
 
 Rhpc_finalize()
 
