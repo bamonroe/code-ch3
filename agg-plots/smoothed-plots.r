@@ -13,9 +13,7 @@ add.lib <- function(){
 	library(plyr)
 	library(dplyr)
 	library(ggplot2)
-	library(grid)
 	library(reshape2)
-	library(parallel)
 }
 
 add.lib()
@@ -30,7 +28,7 @@ load("../data/agg-dat/Agg1Mil-S10k.Rda")
 MM <- tbl_df(MM)
 
 # Don't always want to use it all, there is tons of data
-sam.prop <- .15
+sam.prop <- .05
 
 # Bounds for the means of data
 lbound <- -1.9
@@ -237,11 +235,11 @@ getPlotted <- function(plot){
 		p <- p + scale_x_continuous(breaks=indiff)
 	} 
 	p <- p + scale_color_discrete(name=leg.title)  
-#	  	      scale_fill_gradientn(name=leg.title,space="Lab",colours=colors)
 
 	p <- p + facet_wrap( facets=paste0(dtype,".variable"), ncol=2, scale="free_y")
 
 	p <- p + labs(x=x.title,y=NULL)
+
 	p <- p + theme(legend.title=element_text(size=leg.title.size,vjust=.9),
 					legend.text=element_text(size=leg.text.size,angle=leg.text.angle),
 					legend.position=leg.position,
