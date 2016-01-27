@@ -7,6 +7,8 @@ export <- function(...){
 	obj <- list(...)
 
 	if(is.logical(obj[[1]])){
+		# If the first element is a logical T then add all following elements
+		# then export the to.export list
 		if (obj[[1]] == T){
 
 			if(length(obj)>1){
@@ -40,6 +42,8 @@ export <- function(...){
 			return(print(to.export))
 
 		} else if(obj[[1]] == F){
+			# If the first element is a logical F, then clear the to.export
+			# list and add the following elements back to it
 
 			to.export <- list()
 			if(length(obj)>1){
@@ -48,7 +52,6 @@ export <- function(...){
 					to.export[[te.len]] <<- obj[[i]]
 				}
 			} 
-
 		}
 	}
 
