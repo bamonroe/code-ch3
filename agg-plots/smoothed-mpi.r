@@ -16,12 +16,10 @@ add.lib <- function(){
 
 add.lib()
 
-#Export for MPI
-export("add.lib")
-
 source("../indiff/indifference.r")
 indiff <- round(indiff,2)
 #indiff contains the indifference points of the 9 lotteries
+
 
 # Grab our data
 load("../data/agg-dat/Agg1Mil-S10k.Rda")
@@ -82,35 +80,27 @@ color.4.4 <- c(dyo,cy,yo,pur)
 # Colors to use
 colors <- color.4.4
 
-# Export for MPI cluster
-export("colors")
-
 # Faceting, 
 USE.w <- tbl_df(melt(get(to.USE), measure.vars=c("M.WP","V.WP","M.WC","V.WC") ))
 USE.e <- tbl_df(melt(get(to.USE), measure.vars=c("M.EE","V.EE","M.WE0","V.WE0") ))
 
-USE.w$variable  <-  ifelse(USE.w$variable == "M.WP" , "Mean Expected Welfare Proportion",
-					ifelse(USE.w$variable == "V.WP" , "Variance of Expected Welfare Proportion",
-					ifelse(USE.w$variable == "M.WC" , "Mean Expected Welfare Surplus",
-													  "Variance of Expected Welfare Surplus")
-					))
+USE.w$variable  <-  ifelse(USE.w$variable == "M.WP" , "A) Mean Expected Welfare Proportion",
+					ifelse(USE.w$variable == "V.WP" , "B) Var. of Expected Welfare Proportion",
+					ifelse(USE.w$variable == "M.WC" , "C) Mean Expected Welfare Surplus",
+													  "D) Var. of Expected Welfare Surplus") ))
+USE.e$variable  <-  ifelse(USE.e$variable == "M.EE" , "A) Mean Expected Number of Errors",
+					ifelse(USE.e$variable == "V.EE" , "B) Var. of Expected Number of Errors",
+					ifelse(USE.e$variable == "M.WE0", "C) Mean Expected Proportion of No Error Choices",
+													  "D) Var. of Expected Proportion of No Error Choices") ))
 
-USE.e$variable  <-  ifelse(USE.e$variable == "M.EE" , "Mean Expected Number of Errors",
-					ifelse(USE.e$variable == "V.EE" , "Variance of Expected Number of Errors",
-					ifelse(USE.e$variable == "M.WE0", "Mean Expected Proportion of No Error Choices",
-													  "Variance of Expected Proportion of No Error Choices")
-					))
-
-
-USE.w$variable <- factor(USE.w$variable, levels=c(	"Mean Expected Welfare Proportion",                              											  
-													"Variance of Expected Welfare Proportion",
-													"Mean Expected Welfare Surplus",
-													"Variance of Expected Welfare Surplus"))
-
-USE.e$variable <- factor(USE.e$variable, levels=c(	"Mean Expected Number of Errors",
-													"Variance of Expected Number of Errors",
-													"Mean Expected Proportion of No Error Choices",
-													"Variance of Expected Proportion of No Error Choices"))
+USE.w$variable <- factor(USE.w$variable, levels=c(	"A) Mean Expected Welfare Proportion",                              											  
+													"B) Var. of Expected Welfare Proportion",
+													"C) Mean Expected Welfare Surplus",
+													"D) Var. of Expected Welfare Surplus"))
+USE.e$variable <- factor(USE.e$variable, levels=c(	"A) Mean Expected Number of Errors",
+													"B) Var. of Expected Number of Errors",
+													"C) Mean Expected Proportion of No Error Choices",
+													"D) Var. of Expected Proportion of No Error Choices"))
 
 USE.e <- USE.e %>%
 	select(rm,rs,um,us,variable,value)
@@ -146,9 +136,6 @@ USE$E.value <- USE.e$value
 USE$W.variable <- USE.w$variable
 USE$E.variable <- USE.e$variable
 
-# Need to export USE
-export("USE")
-
 # We now no longer need the "USE" dataframe, again it just wastes ram to keep it around
 rm(list=c("USE.w","USE.e"))
 
@@ -162,9 +149,6 @@ s.names <- rep(s.names,2)
 p.t <- c(rep("E",4),rep("W",4))
 
 to.plot <- data.frame(rbind(names,s.names,p.t))
-
-# Export for MPI
-export("to.plot")
 
 getPlotted <- function(plot){
 
@@ -217,7 +201,8 @@ getPlotted <- function(plot){
 	s.num <- 4
 
 	USE.n <- USE %>% 
-			mutate_(.dots=setNames(paste0("ntile(",s.par,",",s.num,")"),"bin"))
+			select_(.dots=list(x.par,"bin",paste0(dtype,".value"),paste0(dtype,".variable"))) %>%
+			mutate_(.dots=setNames(paste0("ntile(",s.par,",",s.num,")"),"bin")) 
 
 	splits <- dlply(USE.n,"bin")
 
@@ -265,16 +250,13 @@ getPlotted <- function(plot){
 
 }
 
-#Export this for MPI
-export("getPlotted")
-
 # Plot generation is done over MPI, the cost of exporting objects is far outweighed
 # by being able to run the calculations quicker
 
-export(T)
+export(T,"add.lib","indiff","colors","USE","to.plot","getPlotted")
 
-m.lapply(X=to.plot,FUN=getPlotted)
+c.lapply(X=to.plot,FUN=getPlotted)
 
-Rhpc_finalize()
+c.done()
 
 
