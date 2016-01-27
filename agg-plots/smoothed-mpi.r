@@ -26,7 +26,7 @@ load("../data/agg-dat/Agg1Mil-S10k.Rda")
 MM <- tbl_df(MM)
 
 # Don't always want to use it all, there is tons of data
-sam.prop <- .7
+sam.prop <- .15
 
 # Bounds for the means of data
 lbound <- -1.9
@@ -191,7 +191,7 @@ getPlotted <- function(plot){
 
 	leg.title <- ifelse(s.par=="rm", "Mean of CRRA\n\n",
                  ifelse(s.par=="rs", "Standard Deviation\nof CRRA\n\n",
-                 ifelse(s.par=="um", "Mean of Lambda","Standard Deviation\nof Lamda\n\n")))
+                 ifelse(s.par=="um", "Mean of Lambda\n\n","Standard Deviation\nof Lamda\n\n")))
 
 	fac.size <- 36
 
@@ -202,9 +202,27 @@ getPlotted <- function(plot){
 
 	USE.n <- USE %>% 
 			mutate_(.dots=setNames(paste0("ntile(",s.par,",",s.num,")"),"bin")) %>%
-			select_(.dots=list(x.par,"bin",paste0(dtype,".value"),paste0(dtype,".variable"))) 
+			select_(.dots=list(x.par,s.par,"bin",paste0(dtype,".value"),paste0(dtype,".variable"))) 
 
-	USE.n$bin <- factor(USE.n$bin)
+	label <- c()
+	
+	for(i in 1:s.num){
+		lower <- USE.n %>%
+			filter(bin == i) %>%
+			select_(.dots=list(s.par)) %>%
+			min %>%
+			round(2)
+	
+		upper <- USE.n %>%
+			filter(bin == i) %>%
+			select_(.dots=list(s.par)) %>%
+			max %>%
+			round(2)
+
+		label <- c(label, paste0(lower," to ",upper))
+	}
+
+	USE.n$bin <- factor(USE.n$bin,levels=as.character(1:s.num),labels=label,ordered=T)
 
 	p <- ggplot(data=USE.n,aes_string(x=x.par,y=paste0(dtype,".value"),color="bin"))
 
@@ -214,6 +232,8 @@ getPlotted <- function(plot){
 		p <- p + geom_vline(xintercept=indiff,linetype="dotted")
 		p <- p + scale_x_continuous(breaks=indiff)
 	} 
+	p <- p + scale_color_discrete(name=leg.title)  
+#	  	      scale_fill_gradientn(name=leg.title,space="Lab",colours=colors)
 
 	p <- p + facet_wrap( facets=paste0(dtype,".variable"), ncol=2, scale="free_y")
 
