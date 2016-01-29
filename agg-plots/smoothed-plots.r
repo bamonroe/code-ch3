@@ -28,7 +28,7 @@ load("../data/agg-dat/Agg1Mil-S10k.Rda")
 MM <- tbl_df(MM)
 
 # Don't always want to use it all, there is tons of data
-sam.prop <- .05
+sam.prop <- .7
 
 # Bounds for the means of data
 lbound <- -1.9
@@ -197,7 +197,13 @@ getPlotted <- function(plot){
 
 	fac.size <- 36
 
-	axis.text.size = 24
+	axis.text.size <- 24
+
+	axis.x.angle <- 45
+	axis.x.vjust <- .5
+
+	axis.y.angle <- 0
+	axis.y.vjust <- 0
 
 	# Split the dataset up in a few ways to get multiple smoothed lines
 	s.num <- 4
@@ -247,7 +253,8 @@ getPlotted <- function(plot){
 					legend.key.height=unit(leg.key.height,"in"),
 					legend.key.width=unit(leg.key.width,"in"),
 					axis.title.x=element_text(size=x.title.size),
-					axis.text=element_text(size=axis.text.size),
+					axis.text.y=element_text(size=axis.text.size,angle=axis.y.angle),
+					axis.text.x=element_text(size=axis.text.size,angle=axis.x.angle,vjust=axis.x.vjust),
 					strip.text=element_text(size=fac.size)
 					)
 
