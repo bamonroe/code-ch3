@@ -38,3 +38,4 @@ indiff <- apply(inst,1,function(x){
 
 })
 
+indiff <- indiff[1:9]
