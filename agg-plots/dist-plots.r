@@ -139,8 +139,8 @@ USE$den <- apply(cbind(USE$rm,USE$rs),1,function(r){
 rm(list=c("USE.w","USE.e","to.USE"))
 
 # What are the parameter names
-names   <- c("den","den")
-s.names <- c("rm","rs")
+names   <- c("den")
+s.names <- c("rm")
 
 p.t <- c(rep("E",length(names)),rep("W",length(names)))
 
@@ -203,39 +203,40 @@ getPlotted <- function(plot){
 	# Split the dataset up in a few ways to get multiple smoothed lines
 	s.num <- 4
 
-	USE.n <- USE %>% 
-			mutate_(.dots=setNames(paste0("ntile(",s.par,",",s.num,")"),"bin")) %>%
-			select_(.dots=list(x.par,s.par,"bin",paste0(dtype,".value"),paste0(dtype,".variable"))) 
+	USE.n <- USE
 
-	label <- c()
-	
-	for(i in 1:s.num){
-		lower <- USE.n %>%
-			filter(bin == i) %>%
-			select_(.dots=list(s.par)) %>%
-			min %>%
-			round(2)
-	
-		upper <- USE.n %>%
-			filter(bin == i) %>%
-			select_(.dots=list(s.par)) %>%
-			max %>%
-			round(2)
+#	USE.n <- USE.n %>% 
+#			mutate_(.dots=setNames(paste0("ntile(",s.par,",",s.num,")"),"bin")) %>%
+#			select_(.dots=list(x.par,s.par,"bin",paste0(dtype,".value"),paste0(dtype,".variable"))) 
+#
+#	label <- c()
+#	
+#	for(i in 1:s.num){
+#		lower <- USE.n %>%
+#			filter(bin == i) %>%
+#			select_(.dots=list(s.par)) %>%
+#			min %>%
+#			round(2)
+#	
+#		upper <- USE.n %>%
+#			filter(bin == i) %>%
+#			select_(.dots=list(s.par)) %>%
+#			max %>%
+#			round(2)
+#
+#		label <- c(label, paste0(lower," to ",upper))
+#	}
+#
+#	# Split the dataset up in a few ways to get multiple smoothed lines
+#	USE.n$bin <- factor(USE.n$bin,levels=as.character(1:s.num),labels=label,ordered=T)
+#
+#	p <- ggplot(data=USE.n,aes_string(x=x.par,y=paste0(dtype,".value"),color="bin"))
 
-		label <- c(label, paste0(lower," to ",upper))
-	}
+	p <- ggplot(data=USE.n,aes_string(x=x.par,y=paste0(dtype,".value")))
 
-	# Split the dataset up in a few ways to get multiple smoothed lines
-	USE.n$bin <- factor(USE.n$bin,levels=as.character(1:s.num),labels=label,ordered=T)
+	#p <- p + geom_smooth(stat="smooth", method="loess",  span=0.1 , formula=y~x^2 ) 
+	p <- p + geom_smooth(stat="smooth", method="gam",  span=0.1 , formula=y~s(x^2) + um ) 
 
-	p <- ggplot(data=USE.n,aes_string(x=x.par,y=paste0(dtype,".value"),color="bin"))
-
-	p <- p + geom_smooth(stat="smooth", method="loess",  span=0.1 , formula=y~x^2 ) 
-
-	if( x.par == "rm" ){
-		p <- p + geom_vline(xintercept=indiff,linetype="dotted")
-		p <- p + scale_x_continuous(breaks=indiff)
-	} 
 	p <- p + scale_color_discrete(name=leg.title)  
 
 	p <- p + facet_wrap( facets=paste0(dtype,".variable"), ncol=2, scale="free_y")
