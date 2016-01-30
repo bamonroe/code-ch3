@@ -28,17 +28,17 @@ load("../data/agg-dat/Agg1Mil-S10k.Rda")
 MM <- tbl_df(MM)
 
 # Don't always want to use it all, there is tons of data
-sam.prop <- .05
+sam.prop <- 1
 
 # Bounds for the means of data
 lbound <- -1.9
 ubound <- 1.55
 
 # Certain data have rm inside the relevent range of the HL-MPL, others don't.
-# Make the distiction
 IN  <- MM %>%
 	sample_frac(sam.prop) %>%
 	filter(rm > lbound, rm < ubound) %>%
+	filter(um < .6) %>%
 	mutate(id = 1:n())
 
 #OUT <- MM %>%
@@ -112,7 +112,7 @@ USE.w <- USE.w %>%
 	select(rm,rs,um,us,variable,value)
 
 USE <- USE.w %>%
-	select(rm,rs)
+	select(rm,rs,um)
 
 USE$W.value <- USE.w$value
 USE$E.value <- USE.e$value
@@ -120,27 +120,20 @@ USE$E.value <- USE.e$value
 USE$W.variable <- USE.w$variable
 USE$E.variable <- USE.e$variable
 
-USE$den <- apply(cbind(USE$rm,USE$rs),1,function(r){
+m.den <- dnorm(USE$rm,mean=USE$rm,sd=USE$rs)
 
-			rm <- r[1]
-			rs <- r[2]
-
-			m.den <- dnorm(rm,mean=rm,sd=rs)
-
-			dists <- lapply(indiff,function(x){
-				dnorm(x,mean=rm,sd=rs) / m.den
-			})
-						
-			do.call(sum,dists)
-					
-		})
+dists <- lapply(indiff,function(x){
+	dnorm(x,mean=USE$rm,sd=USE$rs) / m.den
+})
+		
+USE$den <- rowSums(do.call(cbind,dists))
 
 # We now no longer need the "*USE*" dataframe, again it just wastes ram to keep it around
 rm(list=c("USE.w","USE.e","to.USE"))
 
 # What are the parameter names
 names   <- c("den")
-s.names <- c("rm")
+s.names <- c("um")
 
 p.t <- c(rep("E",length(names)),rep("W",length(names)))
 
@@ -205,37 +198,37 @@ getPlotted <- function(plot){
 
 	USE.n <- USE
 
-#	USE.n <- USE.n %>% 
-#			mutate_(.dots=setNames(paste0("ntile(",s.par,",",s.num,")"),"bin")) %>%
-#			select_(.dots=list(x.par,s.par,"bin",paste0(dtype,".value"),paste0(dtype,".variable"))) 
-#
-#	label <- c()
-#	
-#	for(i in 1:s.num){
-#		lower <- USE.n %>%
-#			filter(bin == i) %>%
-#			select_(.dots=list(s.par)) %>%
-#			min %>%
-#			round(2)
-#	
-#		upper <- USE.n %>%
-#			filter(bin == i) %>%
-#			select_(.dots=list(s.par)) %>%
-#			max %>%
-#			round(2)
-#
-#		label <- c(label, paste0(lower," to ",upper))
-#	}
-#
-#	# Split the dataset up in a few ways to get multiple smoothed lines
-#	USE.n$bin <- factor(USE.n$bin,levels=as.character(1:s.num),labels=label,ordered=T)
-#
-#	p <- ggplot(data=USE.n,aes_string(x=x.par,y=paste0(dtype,".value"),color="bin"))
+	USE.n <- USE.n %>% 
+			mutate_(.dots=setNames(paste0("ntile(",s.par,",",s.num,")"),"bin")) %>%
+			select_(.dots=list(x.par,s.par,"bin",paste0(dtype,".value"),paste0(dtype,".variable"))) 
 
-	p <- ggplot(data=USE.n,aes_string(x=x.par,y=paste0(dtype,".value")))
+	label <- c()
+	
+	for(i in 1:s.num){
+		lower <- USE.n %>%
+			filter(bin == i) %>%
+			select_(.dots=list(s.par)) %>%
+			min %>%
+			round(2)
+	
+		upper <- USE.n %>%
+			filter(bin == i) %>%
+			select_(.dots=list(s.par)) %>%
+			max %>%
+			round(2)
 
-	#p <- p + geom_smooth(stat="smooth", method="loess",  span=0.1 , formula=y~x^2 ) 
-	p <- p + geom_smooth(stat="smooth", method="gam",  span=0.1 , formula=y~s(x^2) + um ) 
+		label <- c(label, paste0(lower," to ",upper))
+	}
+
+	# Split the dataset up in a few ways to get multiple smoothed lines
+	USE.n$bin <- factor(USE.n$bin,levels=as.character(1:s.num),labels=label,ordered=T)
+
+	p <- ggplot(data=USE.n,aes_string(x=x.par,y=paste0(dtype,".value"),color="bin"))
+
+#	p <- p + geom_point(alpha=.1)
+
+	# Loess was tested, looked almost the same, and this takes less horsepower
+	p <- p + geom_smooth(stat="smooth", method="gam",  span=0.1 , formula=y~s(x^2))
 
 	p <- p + scale_color_discrete(name=leg.title)  
 
@@ -255,6 +248,7 @@ getPlotted <- function(plot){
 					strip.text=element_text(size=fac.size)
 					)
 
+
 	# Return the plot to the list
 	dat <- ifelse(dtype=="W","Wel","Err")
 
@@ -265,8 +259,8 @@ getPlotted <- function(plot){
 	save.scale <- 3
 
 	fname <- paste("../data/agg-plots/D-",dat,"-",s.par,".jpg",sep="")
-	print(paste(system("hostname"),"has started",fname))
 
+	print(paste(system("hostname"),"has started",fname))
 	ggsave(filename=fname, plot=p, width=w, height=h, units="in",scale=save.scale )
 
 	return(NULL)
