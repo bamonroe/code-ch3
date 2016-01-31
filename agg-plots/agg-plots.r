@@ -50,7 +50,7 @@ alph <- (.7 / (exp(sam.prop)))
 #alph <- .35
 
 # Text naming the data.frame to use
-USE <- "IN"
+to.USE <- "IN"
 
 # Colors
 cy  <-"#32b0e6" # Cyan
@@ -86,8 +86,8 @@ colors <- color.4.4
 shape <- 20
 
 # Faceting, 
-USE.w <- melt(get(USE), measure.vars=c("M.WP","V.WP","M.WC","V.WC") )
-USE.e <- melt(get(USE), measure.vars=c("M.EE","V.EE","M.WE0","V.WE0") )
+USE.w <- melt(get(to.USE), measure.vars=c("M.WP","V.WP","M.WC","V.WC") )
+USE.e <- melt(get(to.USE), measure.vars=c("M.EE","V.EE","M.WE0","V.WE0") )
 
 USE.w$variable  <-  ifelse(USE.w$variable == "M.WP" , "A) Mean Expected Welfare Proportion",
 					ifelse(USE.w$variable == "V.WP" , "B) Var. of Expected Welfare Proportion",
@@ -107,9 +107,43 @@ USE.e$variable <- factor(USE.e$variable, levels=c(	"A) Mean Expected Number of E
 													"C) Mean Expected Proportion of No Error Choices",
 													"D) Var. of Expected Proportion of No Error Choices"))
 
-# We now no longer need the "USE" dataframe, again it just wastes ram to keep it around
-rm(list=USE)
+USE.e <- USE.e %>%
+	select(rm,rs,um,us,variable,value)
 													
+USE.w <- USE.w %>%
+	select(rm,rs,um,us,variable,value)
+
+USE <- USE.w %>%
+	select(rm,rs,um,us)
+
+USE$W.value <- USE.w$value
+USE$E.value <- USE.e$value
+
+USE$W.variable <- USE.w$variable
+USE$E.variable <- USE.e$variable
+
+# We now no longer need the "USE" dataframe, again it just wastes ram to keep it around
+rm(list=to.USE)
+
+# Aggregate the two melded datasets to reduce RAM
+USE.e <- USE.e %>%
+	select(rm,rs,um,us,variable,value)
+													
+USE.w <- USE.w %>%
+	select(rm,rs,um,us,variable,value)
+
+USE <- USE.w %>%
+	select(rm,rs,um,us)
+
+USE$W.value <- USE.w$value
+USE$E.value <- USE.e$value
+
+USE$W.variable <- USE.w$variable
+USE$E.variable <- USE.e$variable
+
+# We now no longer need the "USE" dataframe, again it just wastes ram to keep it around
+rm(list=c("USE.w","USE.e"))
+
 # What are the parameter names
 names   <- c("rm","rs","um","us")
 s.names <- c("rs","rm","us","um")
@@ -117,7 +151,7 @@ s.names <- c("rs","rm","us","um")
 names   <- rep(names,2)
 s.names <- rep(s.names,2)
 
-p.t <- c(rep("USE.e",4),rep("USE.w",4))
+p.t <- c(rep("E",4),rep("W",4))
 
 to.plot <- data.frame(rbind(names,s.names,p.t))
 
@@ -125,11 +159,11 @@ getPlotted <- function(plot){
     
     x.par <- as.character(plot[1])
     s.par <- as.character(plot[2])
-    data  <- as.character(plot[3])
+    dtype <- as.character(plot[3])
 
 	# Reference point for scale
-	mid.ref <- (max(get(data)[[s.par]]) - ((max(get(data)[[s.par]])-(min(get(data)[[s.par]])))/2))
-	limits <- c(min(get(data)[[s.par]]), max(get(data)[[s.par]]))
+	mid.ref <- (max(get(dtype)[[s.par]]) - ((max(get(dtype)[[s.par]])-(min(get(dtype)[[s.par]])))/2))
+	limits <- c(min(get(dtype)[[s.par]]), max(get(dtype)[[s.par]]))
 
 	q.dist <- (limits[2] - mid.ref) / 2
 
@@ -160,7 +194,6 @@ getPlotted <- function(plot){
 
 	x.title.size <- 36
 
-
 	leg.title <- ifelse(s.par=="rm", "Mean of CRRA\n\n",
                  ifelse(s.par=="rs", "Standard Deviation\nof CRRA\n\n",
                  ifelse(s.par=="um", "Mean of Lambda\n","Standard Deviation\nof Lamda\n\n")))
@@ -170,12 +203,12 @@ getPlotted <- function(plot){
 	axis.text.size = 24
 
 	# gather the plot layers
-	p <- ggplot(data=get(data), aes_string(x=x.par))
+	p <- ggplot(data=get(dtype), aes_string(x=x.par))
 	p <- p + scale_color_gradientn(name=leg.title,space="Lab",colours=colors,limits=limits,breaks=breaks) + 
 	  	      scale_fill_gradientn(name=leg.title,space="Lab",colours=colors,limits=limits,breaks=breaks)
 	p <- p + geom_point(shape=shape, alpha=alph, aes_string(y="value",color=s.par,fill=s.par) )
 
-	if(data=="USE.w" & x.par == "rm"){
+	if(x.par == "rm"){
 		p <- p + geom_vline(xintercept=indiff,linetype="dotted")
 	}
 
@@ -193,7 +226,7 @@ getPlotted <- function(plot){
 					)
 
 	# Return the plot to the list
-	dat <- ifelse(data=="USE.w","Wel","Err")
+	dat <- ifelse(dtype=="W","Wel","Err")
 
 	ret <- c(name=list(x.par,dat,p))
 
