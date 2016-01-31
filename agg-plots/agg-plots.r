@@ -16,14 +16,14 @@ source("../indiff/indifference.r")
 #indiff contains the indifference points of the 10 lotteries
 
 # Do I want to do these operations in parallel?
-use.parallel <- F
+use.parallel <- T
 
 # Grab our data
 load("../data/agg-dat/Agg1Mil-S10k.Rda")
 MM <- tbl_df(MM)
 
 # Don't always want to use it all, there is tons of data
-sam.prop <- .1
+sam.prop <- 1
 
 # Bounds for the means of data
 lbound <- -1.7134
@@ -243,6 +243,7 @@ getPlotted <- function(plot){
 	p <- p + geom_point(shape=shape, alpha=alph)
 
 	p <- p + scale_color_discrete(name=leg.title)  
+	p <- p + scale_fill_discrete(name=leg.title)  
 
 	if(x.par == "rm"){
 		p <- p + geom_vline(xintercept=indiff,linetype="dotted")
