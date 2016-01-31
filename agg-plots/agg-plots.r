@@ -1,6 +1,8 @@
 # Clear All
 rm(list=ls())
 
+print("here0")
+
 library(plyr)
 library(dplyr)
 library(ggplot2)
@@ -162,8 +164,8 @@ getPlotted <- function(plot){
     dtype <- as.character(plot[3])
 
 	# Reference point for scale
-	mid.ref <- (max(get(dtype)[[s.par]]) - ((max(get(dtype)[[s.par]])-(min(get(dtype)[[s.par]])))/2))
-	limits <- c(min(get(dtype)[[s.par]]), max(get(dtype)[[s.par]]))
+	mid.ref <- (max(USE[[s.par]]) - ((max(USE[[s.par]])-(min(USE[[s.par]])))/2))
+	limits <- c(min(USE[[s.par]]), max(USE[[s.par]]))
 
 	q.dist <- (limits[2] - mid.ref) / 2
 
@@ -200,20 +202,56 @@ getPlotted <- function(plot){
 
 	fac.size <- 36
 
-	axis.text.size = 24
+	axis.text.size <- 24
+
+	axis.x.angle <- 45
+	axis.x.vjust <- .5
+
+	axis.y.angle <- 0
+	axis.y.vjust <- 0
+
+	# Split the dataset up in a few ways to get multiple smoothed lines
+	s.num <- 4
+
+	USE.n <- USE %>% 
+			mutate_(.dots=setNames(paste0("ntile(",s.par,",",s.num,")"),"bin")) %>%
+			select_(.dots=list(x.par,s.par,"bin",paste0(dtype,".value"),paste0(dtype,".variable"))) 
+
+	label <- c()
+	
+	for(i in 1:s.num){
+		lower <- USE.n %>%
+			filter(bin == i) %>%
+			select_(.dots=list(s.par)) %>%
+			min %>%
+			round(2)
+	
+		upper <- USE.n %>%
+			filter(bin == i) %>%
+			select_(.dots=list(s.par)) %>%
+			max %>%
+			round(2)
+
+		label <- c(label, paste0(lower," to ",upper))
+	}
+
+	USE.n$bin <- factor(USE.n$bin,levels=as.character(1:s.num),labels=label,ordered=T)
 
 	# gather the plot layers
-	p <- ggplot(data=get(dtype), aes_string(x=x.par))
-	p <- p + scale_color_gradientn(name=leg.title,space="Lab",colours=colors,limits=limits,breaks=breaks) + 
-	  	      scale_fill_gradientn(name=leg.title,space="Lab",colours=colors,limits=limits,breaks=breaks)
-	p <- p + geom_point(shape=shape, alpha=alph, aes_string(y="value",color=s.par,fill=s.par) )
+	p <- ggplot(data=USE.n,aes_string(x=x.par,y=paste0(dtype,".value"),color="bin",fill="bin"))
+
+	p <- p + geom_point(shape=shape, alpha=alph)
+
+	p <- p + scale_color_discrete(name=leg.title)  
 
 	if(x.par == "rm"){
 		p <- p + geom_vline(xintercept=indiff,linetype="dotted")
 	}
 
-	p <- p + facet_wrap( facets=~variable, ncol=2, scale="free_y")
+	p <- p + facet_wrap( facets=paste0(dtype,".variable"), ncol=2, scale="free_y")
+
 	p <- p + labs(x=x.title,y=NULL)
+
 	p <- p + theme(legend.title=element_text(size=leg.title.size,vjust=.9),
 					legend.text=element_text(size=leg.text.size,angle=leg.text.angle),
 					legend.position=leg.position,
@@ -221,16 +259,22 @@ getPlotted <- function(plot){
 					legend.key.height=unit(leg.key.height,"in"),
 					legend.key.width=unit(leg.key.width,"in"),
 					axis.title.x=element_text(size=x.title.size),
-					axis.text=element_text(size=axis.text.size),
+					axis.text.y=element_text(size=axis.text.size,angle=axis.y.angle),
+					axis.text.x=element_text(size=axis.text.size,angle=axis.x.angle,vjust=axis.x.vjust),
 					strip.text=element_text(size=fac.size)
 					)
 
 	# Return the plot to the list
 	dat <- ifelse(dtype=="W","Wel","Err")
 
-	ret <- c(name=list(x.par,dat,p))
+	h <- 8.50 - (.79*2) - .5	# Page is 8.5 x 11 inches, margins are .79 inches
+	w <- 11.0 - (.79*2)
 
-	return(ret)
+	save.scale <- 3
+
+	fname <- paste("../data/agg-plots/",dat,"-",x.par,".jpg",sep="")
+
+	ggsave(filename=fname, plot=p, width=w, height=h, units="in",scale=save.scale )
 
 }
 
@@ -242,31 +286,3 @@ if(use.parallel) {
 	plots <- lapply(to.plot,getPlotted)
 }
 
-# another function to do saving
-saver <- function(x){
-	# Diminetions of plots
-	h <- 8.50 - (.79*2) - .5	# Page is 8.5 x 11 inches, margins are .79 inches
-	w <- 11.0 - (.79*2)
-
-	save.scale <- 3
-
-	x.par <- x[[1]]
-	dat <- x[[2]]
-
-	fname <- paste("../data/agg-plots/",dat,"-",x.par,".jpg",sep="")
-
-	ggsave(filename=fname, plot=x[[3]], width=w, height=h, units="in",scale=save.scale )
-
-}
-
-rm(USE.w)
-rm(USE.e)
-
-# Running this in parallel seems to be possible, though it uses about a Gig of ram per core
-if(use.parallel) {
-	mclapply(plots,saver,mc.cores=cores)
-} else {
-	lapply(plots,saver)
-}
-
-plots[[5]][[3]]
