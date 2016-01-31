@@ -1,7 +1,7 @@
 # Clear All
 rm(list=ls())
 
-use.par <- T
+use.par <- F
 
 if(use.par){
 	# Add in Rhpc support functions
@@ -236,11 +236,13 @@ getPlotted <- function(plot){
 
 	p <- p + geom_smooth(stat="smooth", method="loess",  span=0.1 , formula=y~x^2 ) 
 
+	p <- p + scale_color_discrete(name=leg.title)  
+	p <- p + guides(colour = guide_legend(override.aes = list(size = 10)))
+
 	if( x.par == "rm" ){
 		p <- p + geom_vline(xintercept=indiff,linetype="dotted")
 		p <- p + scale_x_continuous(breaks=indiff)
 	} 
-	p <- p + scale_color_discrete(name=leg.title)  
 
 	p <- p + facet_wrap( facets=paste0(dtype,".variable"), ncol=2, scale="free_y")
 

@@ -227,7 +227,8 @@ getPlotted <- function(plot){
 
 	p <- ggplot(data=USE.n,aes_string(x=x.par,y=paste0(dtype,".value"),color="bin"))
 
-	p <- p + geom_point(alpha=.1)
+	# Loess was tested, looked almost the same, and this takes less horsepower
+	p <- p + geom_smooth(stat="smooth", method="gam",  span=0.1 , formula=y~s(x^2))
 
 	p <- p + scale_color_discrete(name=leg.title)  
 
@@ -259,7 +260,7 @@ getPlotted <- function(plot){
 
 	save.scale <- 3
 
-	fname <- paste("../data/agg-plots/D-",dat,"-points.jpg",sep="")
+	fname <- paste("../data/agg-plots/D-",dat,"-smooth.jpg",sep="")
 
 	print(paste(system("hostname"),"has started",fname))
 	ggsave(filename=fname, plot=p, width=w, height=h, units="in",scale=save.scale )

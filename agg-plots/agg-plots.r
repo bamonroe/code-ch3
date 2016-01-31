@@ -23,7 +23,7 @@ load("../data/agg-dat/Agg1Mil-S10k.Rda")
 MM <- tbl_df(MM)
 
 # Don't always want to use it all, there is tons of data
-sam.prop <- 1
+sam.prop <- .1
 
 # Bounds for the means of data
 lbound <- -1.7134
@@ -238,12 +238,17 @@ getPlotted <- function(plot){
 	USE.n$bin <- factor(USE.n$bin,levels=as.character(1:s.num),labels=label,ordered=T)
 
 	# gather the plot layers
-	p <- ggplot(data=USE.n,aes_string(x=x.par,y=paste0(dtype,".value"),color="bin",fill="bin"))
+	#p <- ggplot(data=USE.n,aes_string(x=x.par,y=paste0(dtype,".value"),color="bin",fill="bin"))
+	p <- ggplot(data=USE.n,aes_string(x=x.par,y=paste0(dtype,".value"),shape="bin"))
 
-	p <- p + geom_point(shape=shape, alpha=alph)
+	#p <- p + geom_point(shape=shape, alpha=alph)
+	p <- p + geom_point(alpha=alph)
 
-	p <- p + scale_color_discrete(name=leg.title)  
-	p <- p + scale_fill_discrete(name=leg.title)  
+#	p <- p + scale_color_discrete(name=leg.title)  
+#	p <- p + scale_fill_discrete(name=leg.title)  
+
+#	p <- p + guides(colour = guide_legend(override.aes = list(size = 10,alpha=1)))
+#	p <- p + guides(fill = guide_legend(override.aes = list(size = 10,alpha=1)))
 
 	if(x.par == "rm"){
 		p <- p + geom_vline(xintercept=indiff,linetype="dotted")
@@ -273,7 +278,8 @@ getPlotted <- function(plot){
 
 	save.scale <- 3
 
-	fname <- paste("../data/agg-plots/",dat,"-",x.par,".jpg",sep="")
+	fname <- paste("../data/agg-plots/R-",dat,"-",x.par,".jpg",sep="")
+	print(paste(system("hostname"),"has started",fname))
 
 	ggsave(filename=fname, plot=p, width=w, height=h, units="in",scale=save.scale )
 
