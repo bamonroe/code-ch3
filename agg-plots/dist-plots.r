@@ -14,9 +14,11 @@ add.lib <- function(){
 	library(dplyr)
 	library(ggplot2)
 	library(reshape2)
+	library(parallel)
+	return(detectCores())
 }
 
-add.lib()
+cores <- add.lib()
 
 source("../indiff/indifference.r")
 indiff <- round(indiff,2)
@@ -38,7 +40,7 @@ ubound <- 1.55
 IN  <- MM %>%
 	sample_frac(sam.prop) %>%
 	filter(rm > lbound, rm < ubound) %>%
-	filter(um < .6) %>%
+	filter(um < 1) %>%
 	mutate(id = 1:n())
 
 #OUT <- MM %>%
@@ -194,7 +196,7 @@ getPlotted <- function(plot){
 	axis.y.vjust <- 0
 
 	# Split the dataset up in a few ways to get multiple smoothed lines
-	s.num <- 4
+	s.num <- 10
 
 	USE.n <- USE
 
@@ -225,10 +227,10 @@ getPlotted <- function(plot){
 
 	p <- ggplot(data=USE.n,aes_string(x=x.par,y=paste0(dtype,".value"),color="bin"))
 
-#	p <- p + geom_point(alpha=.1)
+	p <- p + geom_point(alpha=.1)
 
 	# Loess was tested, looked almost the same, and this takes less horsepower
-	p <- p + geom_smooth(stat="smooth", method="gam",  span=0.1 , formula=y~s(x^2))
+#	p <- p + geom_smooth(stat="smooth", method="gam",  span=0.1 , formula=y~s(x^2))
 
 	p <- p + scale_color_discrete(name=leg.title)  
 
@@ -258,7 +260,7 @@ getPlotted <- function(plot){
 
 	save.scale <- 3
 
-	fname <- paste("../data/agg-plots/D-",dat,"-",s.par,".jpg",sep="")
+	fname <- paste("../data/agg-plots/DP-",dat,"-",s.par,".jpg",sep="")
 
 	print(paste(system("hostname"),"has started",fname))
 	ggsave(filename=fname, plot=p, width=w, height=h, units="in",scale=save.scale )
@@ -279,7 +281,7 @@ if(use.par){
 	c.done()
 
 } else{
-	lapply(to.plot,getPlotted)
+	mclapply(to.plot,getPlotted,mc.cores=cores)
 }
 
 
