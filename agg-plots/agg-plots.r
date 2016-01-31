@@ -238,17 +238,15 @@ getPlotted <- function(plot){
 	USE.n$bin <- factor(USE.n$bin,levels=as.character(1:s.num),labels=label,ordered=T)
 
 	# gather the plot layers
-	#p <- ggplot(data=USE.n,aes_string(x=x.par,y=paste0(dtype,".value"),color="bin",fill="bin"))
-	p <- ggplot(data=USE.n,aes_string(x=x.par,y=paste0(dtype,".value"),shape="bin"))
+	p <- ggplot(data=USE.n,aes_string(x=x.par,y=paste0(dtype,".value"),color="bin",fill="bin"))
 
-	#p <- p + geom_point(shape=shape, alpha=alph)
-	p <- p + geom_point(alpha=alph)
+	p <- p + geom_point(shape=shape, alpha=alph)
 
-#	p <- p + scale_color_discrete(name=leg.title)  
-#	p <- p + scale_fill_discrete(name=leg.title)  
+	p <- p + scale_color_discrete(name=leg.title)  
+	p <- p + scale_fill_discrete(name=leg.title)  
 
-#	p <- p + guides(colour = guide_legend(override.aes = list(size = 10,alpha=1)))
-#	p <- p + guides(fill = guide_legend(override.aes = list(size = 10,alpha=1)))
+	p <- p + guides(colour = guide_legend(override.aes = list(size = 10,alpha=1)))
+	p <- p + guides(fill = guide_legend(override.aes = list(size = 10,alpha=1)))
 
 	if(x.par == "rm"){
 		p <- p + geom_vline(xintercept=indiff,linetype="dotted")
