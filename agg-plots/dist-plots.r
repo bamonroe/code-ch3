@@ -231,7 +231,7 @@ getPlotted <- function(plot){
 
 	p <- p + scale_color_discrete(name=leg.title)  
 
-	p <- p + guides(colour = guide_legend(override.aes = list(size = 10)))
+	p <- p + guides(colour = guide_legend(override.aes = list(size = 10,alpha=1)))
 
 	p <- p + facet_wrap( facets=paste0(dtype,".variable"), ncol=2, scale="free_y")
 
