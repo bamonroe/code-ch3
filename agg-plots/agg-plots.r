@@ -1,16 +1,19 @@
 # Clear All
 rm(list=ls())
 
-print("here0")
+library(ctools)
 
-library(plyr)
-library(dplyr)
-library(ggplot2)
-library(grid)
-library(reshape2)
-library(parallel)
+c.start(F)
 
-cores <- detectCores()
+add.lib <- function(){
+	library(Rhpc)
+	library(plyr)
+	library(dplyr)
+	library(ggplot2)
+	library(reshape2)
+}
+
+add.lib()
 
 source("../indiff/indifference.r")
 #indiff contains the indifference points of the 10 lotteries
@@ -49,6 +52,7 @@ rm(MM)
 
 # Functionally determine the alpha channel for the points
 alph <- (.7 / (exp(sam.prop))) 
+c.export("alph")
 #alph <- .35
 
 # Text naming the data.frame to use
@@ -83,9 +87,11 @@ color.4.4 <- c(dyo,cy,yo,pur)
 
 # Colors to use
 colors <- color.4.4
+c.export("colors")
 
 # Shape of the points
 shape <- 20
+c.export("shape")
 
 # Faceting, 
 USE.w <- melt(get(to.USE), measure.vars=c("M.WP","V.WP","M.WC","V.WC") )
@@ -159,6 +165,8 @@ to.plot <- data.frame(rbind(names,s.names,p.t))
 
 getPlotted <- function(plot){
     
+	add.lib()
+
     x.par <- as.character(plot[1])
     s.par <- as.character(plot[2])
     dtype <- as.character(plot[3])
@@ -285,9 +293,8 @@ getPlotted <- function(plot){
 
 # Can't seem to trim "to.plot" enough to allow it to be parallelized, though it runs quick enough
 # that this doesn't seem necessary anyway
-if(use.parallel) {
-	plots <- mclapply(to.plot,getPlotted,mc.cores=cores)
-} else {
-	plots <- lapply(to.plot,getPlotted)
-}
+
+c.export(T,"add.lib","indiff","USE","to.plot","getPlotted")
+
+plots <- c.lapply(to.plot,getPlotted)
 

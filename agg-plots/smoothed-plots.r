@@ -1,12 +1,9 @@
 # Clear All
 rm(list=ls())
 
-use.par <- F
+library(ctools)
 
-if(use.par){
-	# Add in Rhpc support functions
-	source("../Rhpc/cl-tools.r")
-}
+c.start(T)
 
 add.lib <- function(){
 	library(Rhpc)
@@ -21,7 +18,6 @@ add.lib()
 source("../indiff/indifference.r")
 indiff <- round(indiff,2)
 #indiff contains the indifference points of the 9 lotteries
-
 
 # Grab our data
 load("../data/agg-dat/Agg1Mil-S10k.Rda")
@@ -281,16 +277,9 @@ getPlotted <- function(plot){
 # Plot generation is done over MPI, the cost of exporting objects is far outweighed
 # by being able to run the calculations quicker
 
-if(use.par){
+c.export(T,"add.lib","indiff","colors","USE","to.plot","getPlotted")
 
-	export(T,"add.lib","indiff","colors","USE","to.plot","getPlotted")
+c.lapply(X=to.plot,FUN=getPlotted)
 
-	c.lapply(X=to.plot,FUN=getPlotted)
-
-	c.done()
-
-} else{
-	lapply(to.plot,getPlotted)
-}
-
+c.done()
 
