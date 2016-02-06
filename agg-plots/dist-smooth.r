@@ -3,7 +3,7 @@ rm(list=ls())
 
 library(ctools)
 
-c.start(T)
+c.start("P")
 
 add.lib <- function(){
 	library(Rhpc)
