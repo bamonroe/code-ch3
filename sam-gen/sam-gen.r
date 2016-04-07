@@ -3,15 +3,12 @@
 rm(list = ls())
 
 #Libraries
+library(ctools)
 library(microbenchmark)
 library(Rcpp)
-sourceCpp("../Rcpp/halton.cpp")
-#halton(init,H,prime)
-sourceCpp("../Rcpp/sam-gen.cpp")
+library(halton)
 
-library(parallel)
-cores <- detectCores() / 2 
-cores <- detectCores() 
+sourceCpp("../Rcpp/sam-gen.cpp")
 
 # Pattern matrix, where each column is a choice pattern
 patmat <- expand.grid(c(0,1),c(0,1),c(0,1),c(0,1),c(0,1),c(0,1),c(0,1),c(0,1),c(0,1),c(0,1))
@@ -32,15 +29,13 @@ Max <- rep(3.85,10)
 Min <- c(rep(0.10,9),2)
 
 # How many simulations to run per sample
-snum <- 2500000
+snum <- 25000
 
 # Set up the Halton sequences
 burn <- 30
-start <- 1 + burn
-end <- snum + burn
 
-H1 <- halton(start,end,3)	# for r
-H2 <- halton(start,end,7)	# for mu
+H1 <- halton(snum, prime = 3)	# for r
+H2 <- halton(snum, prime = 7)	# for mu
 
 # How many choices per subject
 cnum <- length(A0)
@@ -56,7 +51,7 @@ us <- .3
 k <- (um^2)/(us^2)
 t <- (us^2)/um
 
-sim <- matrix(  c(qnorm(H1,mean = rm, sd = rs), qgamma(H2,shape = k, scale = t) ) ,byrow=T, ncol=snum  )
+sim <- matrix( c(qnorm(H1, mean = rm, sd = rs), qgamma(H2, shape = k, scale = t)), byrow = TRUE, ncol = snum)
 
 # Give the very wide bounds we've mad for ourselves, occasionally we get 
 # a fechner value equal to 0. This creates an "oh shi-" problem later on.
@@ -69,7 +64,7 @@ while(anyNA(sim[,2])){
 	sim[,2] <- ifelse(is.na(sim[,2]) , rgamma(1,shape = k, scale = t),sim[,2] )
 }
 
-# getRes is written in C++ and sourced from GRDD.cpp
+# getRes is written in C++ and sourced from sam-gen.cpp
 Res <- getRes(sim,A0,A1,B0,B1,
 				pA0,pA1,pB0,pB1,
 				Max,Min)
@@ -90,7 +85,7 @@ Probs  <- Res[51:70, ]
 # Free up some memory
 rm(Res)
 
-# DDcpp is written in C++ and sourced from GRDD.cpp
+# DDcpp is written in C++ and sourced from sam-gen.cpp
 D <- data.frame( DDcpp(pat=patmat,M=M,Errors=Errors,Cert=Cert,CEMax=CEMax,Probs=Probs) )
 
 # Free up some memory
@@ -141,7 +136,7 @@ WW  <- c(M.EE=M.EE,
 
 print(c(WW,rm=rm,rs=rs,um=um,us=us))
 
-samdat <- "../data/sam-dat/"
-filename <- paste(samdat,"2Mil.Rda",sep="")
-save(D,file=filename)
+#samdat <- "../data/sam-dat/"
+#filename <- paste(samdat,"2Mil.Rda",sep="")
+#save(D,file=filename)
 
