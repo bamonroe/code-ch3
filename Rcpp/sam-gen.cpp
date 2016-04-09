@@ -22,6 +22,12 @@ NumericVector perH(NumericVector x, NumericVector A0, NumericVector A1, NumericV
 	NumericVector UB(nn)  ;
 	NumericVector UA1(nn) ;
 	NumericVector UB1(nn) ;
+
+	NumericVector wA0(nn)  ;
+	NumericVector wA1(nn)  ;
+	NumericVector wB0(nn)  ;
+	NumericVector wB1(nn)  ;
+
 	NumericVector pA(nn)  ;
 	NumericVector pB(nn)  ;
 
@@ -42,6 +48,12 @@ NumericVector perH(NumericVector x, NumericVector A0, NumericVector A1, NumericV
 	UB.fill(0);
 	UA1.fill(0);
 	UB1.fill(0);
+
+	wA0.fill(0);
+	wA1.fill(0);
+	wB0.fill(0);
+	wB1.fill(0);
+
 	pA.fill(0);
 	pB.fill(0);
 	
@@ -60,13 +72,34 @@ NumericVector perH(NumericVector x, NumericVector A0, NumericVector A1, NumericV
 	double r = x[0];
 	double mu = x[1];
 
+	if (x.size() == 2) {
+
+		wA1 = pA1 ;
+		wA0 = pA0 ;
+
+		wB1 = pB1 ;
+		wB0 = pB0 ;
+	
+	}
+	else{
+
+		double alpha = x[2];
+		double beta = x[3];
+
+		wA1 = exp( -1 * beta * pow( -1 * log(pA1), alpha) ) ;
+		wA0 = exp( -1 * beta * pow( -1 * log(pA0 + pA1), alpha) )  - wA1 ;
+		wB1 = exp( -1 * beta * pow( -1 * log(pB1), alpha) ) ;
+		wB0 = exp( -1 * beta * pow( -1 * log(pB0 + pB1), alpha) )  - wB1 ;
+	
+	}
+
 	NumericVector res(nn*7);
 	res.fill(999);
 
 	ctx = crra(max,r) - crra(min,r);
 
-	UA = (pA0 * crra(A0,r)) + (pA1 * crra(A1,r));
-	UB = (pB0 * crra(B0,r)) + (pB1 * crra(B1,r));
+	UA = (wA0 * crra(A0,r)) + (wA1 * crra(A1,r));
+	UB = (wB0 * crra(B0,r)) + (wB1 * crra(B1,r));
 
 	Aerr = ifelse(UB > UA,1,0);
 	Berr = ifelse(UA > UB,1,0);
