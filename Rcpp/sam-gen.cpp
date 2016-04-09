@@ -57,7 +57,6 @@ NumericVector perH(NumericVector x, NumericVector A0, NumericVector A1, NumericV
 	CEB.fill(0);
 	CEM.fill(0);
 
-
 	double r = x[0];
 	double mu = x[1];
 
