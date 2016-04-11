@@ -1,92 +1,42 @@
 # Clear All
 rm(list=ls())
+gc()
 
 library(ctools)
 
-c.start(F)
-
-add.lib <- function(){
-	library(Rhpc)
-	library(plyr)
-	library(dplyr)
-	library(ggplot2)
-	library(reshape2)
-}
-
-add.lib()
+c.library("plyr","dplyr","ggplot2","reshape2")
 
 source("../indiff/indifference.r")
+indiff <- round(indiff,2)
 #indiff contains the indifference points of the 10 lotteries
 
-# Do I want to do these operations in parallel?
-use.parallel <- T
-
 # Grab our data
-load("../data/agg-dat/Agg1Mil-S10k.Rda")
+load("../data/agg-dat/Agg-sim.Rda")
+#load("../data/agg-dat/Agg1Mil-S10k.Rda")
 MM <- tbl_df(MM)
 
 # Don't always want to use it all, there is tons of data
-sam.prop <- .1
-
-# Bounds for the means of data
-lbound <- -1.7134
-ubound <- 1.3684
-
-lbound <- -1.9
-ubound <- 1.55
+sam.prop <- 1
 
 # Certain data have rm inside the relevent range of the HL-MPL, others don't.
 # Make the distiction
-IN  <- MM %>%
+MM  <- MM %>%
 	sample_frac(sam.prop) %>%
-	filter(rm > lbound, rm < ubound) %>%
 	mutate(id = 1:n())
-
-#OUT <- MM %>%
-#	sample_frac(sam.prop) %>%
-#	filter(rm < lbound | rm > ubound) %>%
-#	mutate(id = 1:n())
-
-# We no longer need the full dataset, it just wastes memory
-rm(MM)
 
 # Functionally determine the alpha channel for the points
 alph <- (.7 / (exp(sam.prop))) 
 c.export("alph")
 #alph <- .35
 
-# Text naming the data.frame to use
-to.USE <- "IN"
-
 # Colors
-cy  <-"#32b0e6" # Cyan
-yo  <-"#e6c832" # Yellow Orange
-ma  <-"#e63271" # Magenta
-
-lcy <- "#41c6ff"
-dyo <- "#ff7d41"
-ye  <- "#ffdc41"
-pur <- "#b941ff"
-
-neog <- "#7aff32"
-mpin <- "#ff327a"
-lora <- "#ff7a32"
-skyb <- "#32beff"
-
-# 3 tone colors
-color.3 <- c(cy,yo,ma)
-color.3.1 <- c("red","blue","yellow")
-# 4 tone colors
-color.4.0 <- c(lcy,dyo,pur,ye)
-color.4.1 <- c(ye,lcy,dyo,pur)
-
-color.4.2 <- c(cy,ye,dyo,pur)
-color.4.3 <- c(mpin,neog,lora,skyb)
-
-color.4.4 <- c(dyo,cy,yo,pur)
+dyo <- "#ff7d41"  # Dark Yellow
+cy  <- "#32b0e6"  # Cyan
+yo  <- "#e6c832"  # Yellow Orange
+pur <- "#b941ff"  # Purple
 
 # Colors to use
-colors <- color.4.4
+colors <- c(dyo,cy,yo,pur)
 c.export("colors")
 
 # Shape of the points
@@ -94,26 +44,28 @@ shape <- 20
 c.export("shape")
 
 # Faceting, 
-USE.w <- melt(get(to.USE), measure.vars=c("M.WP","V.WP","M.WC","V.WC") )
-USE.e <- melt(get(to.USE), measure.vars=c("M.EE","V.EE","M.WE0","V.WE0") )
+USE.w <- melt(MM, measure.vars=c("M.WP","V.WP","M.WC","V.WC") )
+USE.e <- melt(MM, measure.vars=c("M.EE","V.EE","M.WE0","V.WE0") )
 
 USE.w$variable  <-  ifelse(USE.w$variable == "M.WP" , "A) Mean Expected Welfare Proportion",
-					ifelse(USE.w$variable == "V.WP" , "B) Var. of Expected Welfare Proportion",
-					ifelse(USE.w$variable == "M.WC" , "C) Mean Expected Welfare Surplus",
-													  "D) Var. of Expected Welfare Surplus") ))
+                    ifelse(USE.w$variable == "V.WP" , "B) Var. of Expected Welfare Proportion",
+                    ifelse(USE.w$variable == "M.WC" , "C) Mean Expected Welfare Surplus",
+                                                      "D) Var. of Expected Welfare Surplus") ))
+
 USE.e$variable  <-  ifelse(USE.e$variable == "M.EE" , "A) Mean Expected Number of Errors",
-					ifelse(USE.e$variable == "V.EE" , "B) Var. of Expected Number of Errors",
-					ifelse(USE.e$variable == "M.WE0", "C) Mean Expected Proportion of No Error Choices",
-													  "D) Var. of Expected Proportion of No Error Choices") ))
+                    ifelse(USE.e$variable == "V.EE" , "B) Var. of Expected Number of Errors",
+                    ifelse(USE.e$variable == "M.WE0", "C) Mean Expected Proportion of No Error Choices",
+                                                      "D) Var. of Expected Proportion of No Error Choices") ))
 
 USE.w$variable <- factor(USE.w$variable, levels=c(	"A) Mean Expected Welfare Proportion",                              											  
-													"B) Var. of Expected Welfare Proportion",
-													"C) Mean Expected Welfare Surplus",
-													"D) Var. of Expected Welfare Surplus"))
-USE.e$variable <- factor(USE.e$variable, levels=c(	"A) Mean Expected Number of Errors",
-													"B) Var. of Expected Number of Errors",
-													"C) Mean Expected Proportion of No Error Choices",
-													"D) Var. of Expected Proportion of No Error Choices"))
+                                                    "B) Var. of Expected Welfare Proportion",
+                                                    "C) Mean Expected Welfare Surplus",
+                                                    "D) Var. of Expected Welfare Surplus"))
+
+USE.e$variable <- factor(USE.e$variable, levels=c("A) Mean Expected Number of Errors",
+                                                  "B) Var. of Expected Number of Errors",
+                                                  "C) Mean Expected Proportion of No Error Choices",
+                                                  "D) Var. of Expected Proportion of No Error Choices"))
 
 USE.e <- USE.e %>%
 	select(rm,rs,um,us,variable,value)
@@ -129,9 +81,6 @@ USE$E.value <- USE.e$value
 
 USE$W.variable <- USE.w$variable
 USE$E.variable <- USE.e$variable
-
-# We now no longer need the "USE" dataframe, again it just wastes ram to keep it around
-rm(list=to.USE)
 
 # Aggregate the two melded datasets to reduce RAM
 USE.e <- USE.e %>%
@@ -149,8 +98,9 @@ USE$E.value <- USE.e$value
 USE$W.variable <- USE.w$variable
 USE$E.variable <- USE.e$variable
 
-# We now no longer need the "USE" dataframe, again it just wastes ram to keep it around
+# We now no longer need the "USE" dataframe, it just wastes ram to keep it around
 rm(list=c("USE.w","USE.e"))
+gc()
 
 # What are the parameter names
 names   <- c("rm","rs","um","us")
@@ -161,15 +111,17 @@ s.names <- rep(s.names,2)
 
 p.t <- c(rep("E",4),rep("W",4))
 
-to.plot <- data.frame(rbind(names,s.names,p.t))
+type <- c(rep("R",8),rep("S",8))
+
+to.plot <- data.frame(rbind(names,s.names,p.t, type))
 
 getPlotted <- function(plot){
-    
-	add.lib()
 
-    x.par <- as.character(plot[1])
-    s.par <- as.character(plot[2])
-    dtype <- as.character(plot[3])
+    
+	x.par <- as.character(plot[1])
+	s.par <- as.character(plot[2])
+	dtype <- as.character(plot[3])
+	type  <- as.character(plot[4])
 
 	# Reference point for scale
 	mid.ref <- (max(USE[[s.par]]) - ((max(USE[[s.par]])-(min(USE[[s.par]])))/2))
@@ -185,7 +137,6 @@ getPlotted <- function(plot){
 	ll <- ceiling(limits[1]*100)/100
 	breaks <- c(ll,breaks)
 
-
 	# Values for the various plots
 	leg.title.size  <- 30
 	leg.title.vjust <- -100
@@ -199,8 +150,8 @@ getPlotted <- function(plot){
 	leg.key.width   <- .25
 
 	x.title <- ifelse(x.par=="rm", "\nMean of CRRA",
-			   ifelse(x.par=="rs", "\nStandard Deviation of CRRA",
-			   ifelse(x.par=="um", "\nMean of Lambda","Standard Deviation of Lamda")))
+							ifelse(x.par=="rs", "\nStandard Deviation of CRRA",
+							ifelse(x.par=="um", "\nMean of Lambda","Standard Deviation of Lamda")))
 
 	x.title.size <- 36
 
@@ -226,6 +177,7 @@ getPlotted <- function(plot){
 			select_(.dots=list(x.par,s.par,"bin",paste0(dtype,".value"),paste0(dtype,".variable"))) 
 
 	label <- c()
+
 	
 	for(i in 1:s.num){
 		lower <- USE.n %>%
@@ -248,7 +200,12 @@ getPlotted <- function(plot){
 	# gather the plot layers
 	p <- ggplot(data=USE.n,aes_string(x=x.par,y=paste0(dtype,".value"),color="bin",fill="bin"))
 
-	p <- p + geom_point(shape=shape, alpha=alph)
+	# Either Smoothed LOESS lines or the raw plots
+	if(type == "S"){
+		p <- p + geom_smooth(stat="smooth", method="loess",  span=0.1 , formula=y~x^2 ) 
+	} else if( type == "R"){
+		p <- p + geom_point(shape=shape, alpha=alph)
+	}
 
 	p <- p + scale_color_discrete(name=leg.title)  
 	p <- p + scale_fill_discrete(name=leg.title)  
@@ -258,6 +215,7 @@ getPlotted <- function(plot){
 
 	if(x.par == "rm"){
 		p <- p + geom_vline(xintercept=indiff,linetype="dotted")
+		p <- p + scale_x_continuous(breaks=indiff)
 	}
 
 	p <- p + facet_wrap( facets=paste0(dtype,".variable"), ncol=2, scale="free_y")
@@ -284,7 +242,7 @@ getPlotted <- function(plot){
 
 	save.scale <- 3
 
-	fname <- paste("../data/agg-plots/R-",dat,"-",x.par,".jpg",sep="")
+	fname <- paste("../data/agg-plots/",type,"-",dat,"-",x.par,".jpg",sep="")
 	print(paste(system("hostname"),"has started",fname))
 
 	ggsave(filename=fname, plot=p, width=w, height=h, units="in",scale=save.scale )
@@ -294,7 +252,7 @@ getPlotted <- function(plot){
 # Can't seem to trim "to.plot" enough to allow it to be parallelized, though it runs quick enough
 # that this doesn't seem necessary anyway
 
-c.export(T,"add.lib","indiff","USE","to.plot","getPlotted")
+c.export("add.lib","indiff","USE","to.plot","getPlotted")
 
 plots <- c.lapply(to.plot,getPlotted)
 

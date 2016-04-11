@@ -1,19 +1,10 @@
 # Clear All
 rm(list=ls())
+gc()
 
 library(ctools)
 
-c.start(T)
-
-add.lib <- function(){
-	library(Rhpc)
-	library(plyr)
-	library(dplyr)
-	library(ggplot2)
-	library(reshape2)
-}
-
-add.lib()
+c.library("plyr","dplyr","ggplot2","reshape2")
 
 source("../indiff/indifference.r")
 indiff <- round(indiff,2)
@@ -24,7 +15,7 @@ load("../data/agg-dat/Agg1Mil-S10k.Rda")
 MM <- tbl_df(MM)
 
 # Don't always want to use it all, there is tons of data
-sam.prop <- 1
+sam.prop <- .1
 
 # Bounds for the means of data
 lbound <- -1.9
@@ -44,39 +35,20 @@ IN  <- MM %>%
 
 # We no longer need the full dataset, it just wastes memory
 rm(MM)
+gc()
 
 # Text naming the data.frame to use
 to.USE <- "IN"
 
 # Colors
-cy  <-"#32b0e6" # Cyan
-yo  <-"#e6c832" # Yellow Orange
-ma  <-"#e63271" # Magenta
-
-lcy <- "#41c6ff"
-dyo <- "#ff7d41"
-ye  <- "#ffdc41"
-pur <- "#b941ff"
-
-neog <- "#7aff32"
-mpin <- "#ff327a"
-lora <- "#ff7a32"
-skyb <- "#32beff"
-
-# 3 tone colors
-color.3 <- c(cy,yo,ma)
-color.3.1 <- c("red","blue","yellow")
-# 4 tone colors
-color.4.0 <- c(lcy,dyo,pur,ye)
-color.4.1 <- c(ye,lcy,dyo,pur)
-
-color.4.2 <- c(cy,ye,dyo,pur)
-color.4.3 <- c(mpin,neog,lora,skyb)
-
-color.4.4 <- c(dyo,cy,yo,pur)
+dyo <- "#ff7d41"  # Dark Yellow
+cy  <-"#32b0e6"   # Cyan
+yo  <-"#e6c832"   # Yellow Orange
+pur <- "#b941ff"  # Purple
 
 # Colors to use
-colors <- color.4.4
+colors <- c(dyo,cy,yo,pur)
+c.export("colors")
 
 # Faceting, 
 USE.w <- tbl_df(melt(get(to.USE), measure.vars=c("M.WP","V.WP","M.WC","V.WC") ))
@@ -126,6 +98,7 @@ USE$den <- rowSums(do.call(cbind,dists))
 
 # We now no longer need the "*USE*" dataframe, again it just wastes ram to keep it around
 rm(list=c("USE.w","USE.e","to.USE"))
+gc()
 
 # What are the parameter names
 names   <- c("den")
@@ -140,11 +113,9 @@ to.plot <- data.frame(rbind(names,s.names,p.t))
 
 getPlotted <- function(plot){
 
-	add.lib()
-    
-    x.par <- as.character(plot[1])
-    s.par <- as.character(plot[2])
-    dtype <- as.character(plot[3])
+	x.par <- as.character(plot[1])
+	s.par <- as.character(plot[2])
+	dtype <- as.character(plot[3])
 
 	# Reference point for scale
 	mid.ref <- (max(USE[[s.par]]) - ((max(USE[[s.par]])-(min(USE[[s.par]])))/2))
@@ -265,9 +236,7 @@ getPlotted <- function(plot){
 # Plot generation is done over MPI, the cost of exporting objects is far outweighed
 # by being able to run the calculations quicker
 
-c.export(T,"add.lib","indiff","colors","USE","to.plot","getPlotted")
+c.export("add.lib","indiff","colors","USE","to.plot","getPlotted")
 
 c.lapply(X=to.plot,FUN=getPlotted)
-
-c.done()
 
