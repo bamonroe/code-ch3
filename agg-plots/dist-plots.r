@@ -8,69 +8,79 @@ c.library("plyr","dplyr","ggplot2","reshape2")
 
 source("../indiff/indifference.r")
 indiff <- round(indiff,2)
-#indiff contains the indifference points of the 9 lotteries
+#indiff contains the indifference points of the 10 lotteries
 
 # Grab our data
-load("../data/agg-dat/Agg1Mil-S10k.Rda")
+load("../data/agg-dat/Agg-sim.Rda")
+#load("../data/agg-dat/Agg1Mil-S10k.Rda")
 MM <- tbl_df(MM)
 
 # Don't always want to use it all, there is tons of data
-sam.prop <- .1
-
-# Bounds for the means of data
-lbound <- -1.9
-ubound <- 1.55
+sam.prop <- 1
 
 # Certain data have rm inside the relevent range of the HL-MPL, others don't.
-IN  <- MM %>%
+# Make the distiction
+MM  <- MM %>%
 	sample_frac(sam.prop) %>%
-	filter(rm > lbound, rm < ubound) %>%
-	filter(um < 1) %>%
 	mutate(id = 1:n())
 
-#OUT <- MM %>%
-#	sample_frac(sam.prop) %>%
-#	filter(rm < lbound | rm > ubound) %>%
-#	mutate(id = 1:n())
-
-# We no longer need the full dataset, it just wastes memory
-rm(MM)
-gc()
-
-# Text naming the data.frame to use
-to.USE <- "IN"
+# Functionally determine the alpha channel for the points
+alph <- (.7 / (exp(sam.prop))) 
+c.export("alph")
+#alph <- .35
 
 # Colors
 dyo <- "#ff7d41"  # Dark Yellow
-cy  <-"#32b0e6"   # Cyan
-yo  <-"#e6c832"   # Yellow Orange
+cy  <- "#32b0e6"  # Cyan
+yo  <- "#e6c832"  # Yellow Orange
 pur <- "#b941ff"  # Purple
 
 # Colors to use
 colors <- c(dyo,cy,yo,pur)
 c.export("colors")
 
+# Shape of the points
+shape <- 20
+c.export("shape")
+
 # Faceting, 
-USE.w <- tbl_df(melt(get(to.USE), measure.vars=c("M.WP","V.WP","M.WC","V.WC") ))
-USE.e <- tbl_df(melt(get(to.USE), measure.vars=c("M.EE","V.EE","M.WE0","V.WE0") ))
+USE.w <- melt(MM, measure.vars=c("M.WP","V.WP","M.WC","V.WC") )
+USE.e <- melt(MM, measure.vars=c("M.EE","V.EE","M.WE0","V.WE0") )
 
 USE.w$variable  <-  ifelse(USE.w$variable == "M.WP" , "A) Mean Expected Welfare Proportion",
-					ifelse(USE.w$variable == "V.WP" , "B) Var. of Expected Welfare Proportion",
-					ifelse(USE.w$variable == "M.WC" , "C) Mean Expected Welfare Surplus",
-													  "D) Var. of Expected Welfare Surplus") ))
-USE.e$variable  <-  ifelse(USE.e$variable == "M.EE" , "A) Mean Expected Number of Errors",
-					ifelse(USE.e$variable == "V.EE" , "B) Var. of Expected Number of Errors",
-					ifelse(USE.e$variable == "M.WE0", "C) Mean Expected Proportion of No Error Choices",
-													  "D) Var. of Expected Proportion of No Error Choices") ))
+                    ifelse(USE.w$variable == "V.WP" , "B) Var. of Expected Welfare Proportion",
+                    ifelse(USE.w$variable == "M.WC" , "C) Mean Expected Welfare Surplus",
+                                                      "D) Var. of Expected Welfare Surplus") ))
 
-USE.w$variable <- factor(USE.w$variable, levels=c(	"A) Mean Expected Welfare Proportion",
-													"B) Var. of Expected Welfare Proportion",
-													"C) Mean Expected Welfare Surplus",
-													"D) Var. of Expected Welfare Surplus"))
-USE.e$variable <- factor(USE.e$variable, levels=c(	"A) Mean Expected Number of Errors",
-													"B) Var. of Expected Number of Errors",
-													"C) Mean Expected Proportion of No Error Choices",
-													"D) Var. of Expected Proportion of No Error Choices"))
+USE.e$variable  <-  ifelse(USE.e$variable == "M.EE" , "A) Mean Expected Number of Errors",
+                    ifelse(USE.e$variable == "V.EE" , "B) Var. of Expected Number of Errors",
+                    ifelse(USE.e$variable == "M.WE0", "C) Mean Expected Proportion of No Error Choices",
+                                                      "D) Var. of Expected Proportion of No Error Choices") ))
+
+USE.w$variable <- factor(USE.w$variable, levels=c(	"A) Mean Expected Welfare Proportion",                              											  
+                                                    "B) Var. of Expected Welfare Proportion",
+                                                    "C) Mean Expected Welfare Surplus",
+                                                    "D) Var. of Expected Welfare Surplus"))
+
+USE.e$variable <- factor(USE.e$variable, levels=c("A) Mean Expected Number of Errors",
+                                                  "B) Var. of Expected Number of Errors",
+                                                  "C) Mean Expected Proportion of No Error Choices",
+                                                  "D) Var. of Expected Proportion of No Error Choices"))
+
+USE.e <- USE.e %>%
+	select(rm,rs,um,us,variable,value)
+													
+USE.w <- USE.w %>%
+	select(rm,rs,um,us,variable,value)
+
+USE <- USE.w %>%
+	select(rm,rs,um,us)
+
+USE$W.value <- USE.w$value
+USE$E.value <- USE.e$value
+
+USE$W.variable <- USE.w$variable
+USE$E.variable <- USE.e$variable
 
 # Aggregate the two melded datasets to reduce RAM
 USE.e <- USE.e %>%
@@ -80,7 +90,7 @@ USE.w <- USE.w %>%
 	select(rm,rs,um,us,variable,value)
 
 USE <- USE.w %>%
-	select(rm,rs,um)
+	select(rm,rs,um,us)
 
 USE$W.value <- USE.w$value
 USE$E.value <- USE.e$value
@@ -97,7 +107,7 @@ dists <- lapply(indiff,function(x){
 USE$den <- rowSums(do.call(cbind,dists))
 
 # We now no longer need the "*USE*" dataframe, again it just wastes ram to keep it around
-rm(list=c("USE.w","USE.e","to.USE"))
+rm(list=c("USE.w","USE.e"))
 gc()
 
 # What are the parameter names
@@ -109,13 +119,16 @@ p.t <- c(rep("E",length(names)),rep("W",length(names)))
 names   <- rep(names,2)
 s.names <- rep(s.names,2)
 
-to.plot <- data.frame(rbind(names,s.names,p.t))
+type <- c(rep("R",2),rep("S",2))
+
+to.plot <- data.frame(rbind(names,s.names,p.t,type))
 
 getPlotted <- function(plot){
 
 	x.par <- as.character(plot[1])
 	s.par <- as.character(plot[2])
 	dtype <- as.character(plot[3])
+	type  <- as.character(plot[4])
 
 	# Reference point for scale
 	mid.ref <- (max(USE[[s.par]]) - ((max(USE[[s.par]])-(min(USE[[s.par]])))/2))
@@ -190,13 +203,20 @@ getPlotted <- function(plot){
 	# Split the dataset up in a few ways to get multiple smoothed lines
 	USE.n$bin <- factor(USE.n$bin,levels=as.character(1:s.num),labels=label,ordered=T)
 
-	p <- ggplot(data=USE.n,aes_string(x=x.par,y=paste0(dtype,".value"),color="bin"))
+	p <- ggplot(data=USE.n,aes_string(x=x.par,y=paste0(dtype,".value"),color="bin", fill = "bin"))
 
-	p <- p + geom_point(alpha=.1)
+	if(type == "S"){
+		p <- p + geom_smooth(stat="smooth", method="gam",  span=0.1 , formula=y~s(x^2))
+		#p <- p + geom_smooth(stat="smooth", method="loess",  span=0.1 , formula=y~x^2 ) 
+	} else if( type == "R"){
+		p <- p + geom_point(shape=shape, alpha=alph)
+	}
 
 	p <- p + scale_color_discrete(name=leg.title)  
+	p <- p + scale_fill_discrete(name=leg.title)  
 
 	p <- p + guides(colour = guide_legend(override.aes = list(size = 10,alpha=1)))
+	p <- p + guides(fill = guide_legend(override.aes = list(size = 10,alpha=1)))
 
 	p <- p + facet_wrap( facets=paste0(dtype,".variable"), ncol=2, scale="free_y")
 
@@ -224,7 +244,7 @@ getPlotted <- function(plot){
 
 	save.scale <- 3
 
-	fname <- paste("../data/agg-plots/D-",dat,"-points.jpg",sep="")
+	fname <- paste("../data/agg-plots/",type,"-",dat,"-D.jpg",sep="")
 
 	print(paste(system("hostname"),"has started",fname))
 	ggsave(filename=fname, plot=p, width=w, height=h, units="in",scale=save.scale )

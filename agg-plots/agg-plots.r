@@ -117,7 +117,6 @@ to.plot <- data.frame(rbind(names,s.names,p.t, type))
 
 getPlotted <- function(plot){
 
-    
 	x.par <- as.character(plot[1])
 	s.par <- as.character(plot[2])
 	dtype <- as.character(plot[3])
@@ -178,7 +177,6 @@ getPlotted <- function(plot){
 
 	label <- c()
 
-	
 	for(i in 1:s.num){
 		lower <- USE.n %>%
 			filter(bin == i) %>%
