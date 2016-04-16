@@ -6,6 +6,7 @@ rm(list = ls())
 library(microbenchmark)
 library(Rcpp)
 library(halton)
+library(dplyr)
 
 # C++ functions for this script
 sourceCpp("../Rcpp/sam-gen.cpp")
@@ -219,8 +220,52 @@ MIX <- MIX[order(MIX$PC, decreasing=T),]
 MAG <- MAG[order(MAG$rank, decreasing=F),]
 MIX$EUTprop <- MAG$EUTprop
 
+
+EUT <- tbl_df(EUT)
+RDU <- tbl_df(RDU)
+MIX <- tbl_df(MIX)
+
 print(head(EUT,n=10))
 print(head(RDU,n=10))
 print(head(MIX,n=10))
 
 print(EUT.prop)
+
+# Now lets get this all in a CSV that can be directly imported into latex
+
+TopTenEUT <- EUT %>%
+				select(Pattern, PC, EE, WP, WC, E.0, E.1) %>%
+				top_n(10 , PC)
+
+
+TopTenRDU <- RDU %>%
+				select(Pattern, PC, EE, WP, WC, E.0, E.1) %>%
+				top_n(10 , PC)
+
+TopTenMIX <- MIX %>%
+				select(Pattern, PC, EE, WP, WC, E.0, E.1) %>%
+				top_n(10 , PC)
+
+subpop <- c(1:10, "PC" , "EE", "WP", "WC", "E.0", "E.1")
+
+for(mod in c("TopTenEUT", "TopTenRDU", "TopTenMIX")){
+	pat <- lapply( 1:10, function(i){
+					get(mod)$Pattern[i]				%>%
+					strsplit( split = c(",")) %>%
+					do.call(what = c)					%>%
+					trimws()									%>%
+					as.numeric()
+				})
+	pat <- do.call(rbind, pat)
+
+	out <- get(mod) %>%
+						select(-Pattern)
+
+	out <- cbind(pat,out)
+
+	assign(paste0(mod,".out") , out)
+
+	write.csv(out,file = paste0("../tables/",mod,".csv"), row.names = FALSE, quote = FALSE)
+
+}
+
