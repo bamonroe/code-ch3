@@ -19,8 +19,8 @@ NumericVector pw(NumericVector p , NumericVector a, NumericVector b){
 
 // [[Rcpp::export]]
 double MSL_EUT(NumericVector par, NumericMatrix h1, NumericMatrix h2,
-					NumericVector A0, NumericVector A1, NumericVector B0, NumericVector B1,
-					NumericVector pA0, NumericVector pA1, NumericVector pB0, NumericVector pB1,
+					NumericMatrix A, NumericMatrix B,
+					NumericMatrix pA, NumericMatrix pB
 					NumericVector max, NumericVector min, NumericVector c){
     
 
@@ -39,14 +39,21 @@ double MSL_EUT(NumericVector par, NumericMatrix h1, NumericMatrix h2,
 	NumericMatrix mu(rnum,h);
 
 	NumericVector ctx(rnum);
-	NumericVector UA(rnum);
-	NumericVector UB(rnum);
-	NumericVector UB1(rnum);
-	NumericVector PA(rnum);
+
+	NumericVector pzA(A.nrow());
+	NumericVector pzB(A.nrow());
+	NumericVector prA(A.nrow());
+	NumericVector prB(A.nrow());
+
+	NumericMatrix UA(rnum);
+	NumericMatrix UB(rnum);
+	NumericMatrix UB1(rnum);
+	NumericMatrix PA(rnum);
 
 	NumericVector N0(rnum);
 	NumericVector N1(rnum);
-	NumericVector pA(rnum);
+	NumericVector Aprob(rnum);
+	NumericVector Bprob(rnum);
 
 	NumericMatrix sim(rnum,h);
 
@@ -59,8 +66,18 @@ double MSL_EUT(NumericVector par, NumericMatrix h1, NumericMatrix h2,
 		ctx = vpow(max,(1-r(_,i)))/(1-r(_,i)) - vpow(min,(1-r(_,i)))/(1-r(_,i));
 
 		// Calculate the utility of the lotteries
-		UA = (pA0 * vpow(A0,(1-r(_,i)))/(1-r(_,i))) + (pA1 * vpow(A1,(1-r(_,i)))/(1-r(_,i)));
-		UB = (pB0 * vpow(B0,(1-r(_,i)))/(1-r(_,i))) + (pB1 * vpow(B1,(1-r(_,i)))/(1-r(_,i)));
+		UA.fill(0);
+		UB.fill(0);
+
+		for(int j = 0; j < A.ncol(); j++){
+			pzA = A(_,j);
+			pzB = B(_,j);
+			prA = pA(_,j);
+			prB = pB(_,j);
+
+			UA = UA + (prA * vpow(pzA,(1-r(_,i)))/(1-r(_,i)));
+			UB = UB + (prB * vpow(pzB,(1-r(_,i)))/(1-r(_,i)));
+		}
 
 		// Re-base utility of B and add in context and fechner
 		UB1  = (UB/ctx/mu(_,i)) - (UA/ctx/mu(_,i));
@@ -75,13 +92,13 @@ double MSL_EUT(NumericVector par, NumericMatrix h1, NumericMatrix h2,
 		N1 = ifelse( UB1 > 709 , 0 , PA );
 
 		// Check for the 2 issues, and return the probability of A
-		pA = ifelse( is_na(UB1) , N0 , N1);
+		Aprob = ifelse( is_na(UB1) , N0 , N1);
 
 		// Making pB = 1-pA saves us the exponential calculations - it's faster
-		NumericVector pB = 1 - pA;
+		NumericVector Bprob = 1 - Aprob;
 
 		// Grab the choice probability for the chosen option
-		sim(_,i) = ifelse(c==0,pA,pB);
+		sim(_,i) = ifelse(c==0, Aprob, Bprob);
 
 	}
 
