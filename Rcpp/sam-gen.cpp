@@ -1,3 +1,4 @@
+# include <math.h>
 # include <RcppArmadillo.h>
 // [[Rcpp::depends(RcppArmadillo)]]
 using namespace Rcpp;
@@ -162,15 +163,16 @@ NumericMatrix DDcpp(NumericMatrix pat, NumericVector M, NumericMatrix Errors,
 	int snum = pat.ncol();
 	int choices = pat.nrow();
 	int cnum = Errors.ncol(); 
-	double EE=0,PC=1,WC=0,WP=0;
+	double EE=0, PC=1, LPC=0, WC=0, WP=0;
 
 	int choice[20];
-	double Eset,E0=0,E1=0,E2=0,E3=0,E4=0,E5=0,E6=0,E7=0,E8=0,E9=0,E10=0;
+	double Eset, E0=0, E1=0, E2=0, E3=0, E4=0, E5=0, E6=0, E7=0, E8=0, E9=0, E10=0;
 
-	NumericMatrix Res( snum,15 );
+	NumericMatrix Res( snum,16 );
 	/* These are the 24 columns
 	EE
 	PC
+	LPC
 	WC
 	WP
 	E.0   
@@ -200,25 +202,27 @@ NumericMatrix DDcpp(NumericMatrix pat, NumericVector M, NumericMatrix Errors,
 	// Loop through each pattern
 	for(int i = 0 ; i < snum ; i++){
 
-	EE=0,PC=1,WC=0,WP=0;
-	E0=0,E1=0,E2=0,E3=0,E4=0,E5=0,E6=0,E7=0,E8=0,E9=0,E10=0;
+	EE=0, PC=1, LPC=0, WC=0, WP=0;
+	E0=0, E1=0, E2=0, E3=0, E4=0, E5=0, E6=0, E7=0, E8=0, E9=0, E10=0;
 
 		// Set up the choice vector
 		for(int j = 0 ; j < choices ; j++){
 
 			if(pat(j,i)==0){
 				choice[j] = 1;
-				EE = EE + M[j];
-				PC = PC * M[50+j];
-				WC = WC + ( M[20+j] - M[30+j] ) ; 
-				WP = WP + ( M[20+j] / M[40+j] ) ; 
+				EE  = EE + M[j];
+				PC  = PC * M[50+j];
+				LPC = LPC + std::log(M[50+j]);
+				WC  = WC + ( M[20+j] - M[30+j] ) ; 
+				WP  = WP + ( M[20+j] / M[40+j] ) ; 
 			}
 			else{
 				choice[j] = 0;
-				EE = EE + M[j+10];
-				PC = PC * M[60+j];
-				WC = WC + ( M[30+j] - M[20+j] ) ;
-				WP = WP + ( M[30+j] / M[40+j] ) ; 
+				EE  = EE + M[j+10];
+				PC  = PC * M[60+j];
+				LPC = LPC + std::log(M[60+j]);
+				WC  = WC + ( M[30+j] - M[20+j] ) ;
+				WP  = WP + ( M[30+j] / M[40+j] ) ; 
 			}
 
 			choice[j+10] = pat(j,i);
@@ -261,19 +265,20 @@ NumericMatrix DDcpp(NumericMatrix pat, NumericVector M, NumericMatrix Errors,
 
 		Res(i,0) = EE;
 		Res(i,1) = PC;
-		Res(i,2) = WC;
-		Res(i,3) = WP;
-		Res(i,4) = E0;
-		Res(i,5) = E1;
-		Res(i,6) = E2;
-		Res(i,7) = E3;
-		Res(i,8) = E4;
-		Res(i,9) = E5;
-		Res(i,10) = E6;
-		Res(i,11) = E7;
-		Res(i,12) = E8;
-		Res(i,13) = E9;
-		Res(i,14) = E10;
+		Res(i,2) = LPC;
+		Res(i,3) = WC;
+		Res(i,4) = WP;
+		Res(i,5) = E0;
+		Res(i,6) = E1;
+		Res(i,7) = E2;
+		Res(i,8) = E3;
+		Res(i,9) = E4;
+		Res(i,10) = E5;
+		Res(i,11) = E6;
+		Res(i,12) = E7;
+		Res(i,13) = E8;
+		Res(i,14) = E9;
+		Res(i,15) = E10;
 
 	}
 
