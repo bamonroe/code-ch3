@@ -77,10 +77,10 @@ rm(sim)
 
 M <- rowMeans(Res)
 
-Errors <- Res[1:20, ]
-Cert   <- Res[21:40, ]
-CEMax  <- rbind(Res[41:50, ] , Res[41:50, ])
-Probs  <- Res[51:70, ]
+Errors <- Res[1:20, ]    # 10 rows and 2 options in HL-MPL = 20 elements
+Cert   <- Res[21:40, ]   # Same
+CEMax  <- rbind(Res[41:50, ] , Res[41:50, ]) # First 10 are for option A, next 10 for option B
+Probs  <- Res[51:70, ]   # 10 rows and 2 options in HL-MPL = 20 elements
 
 # Free up some memory
 rm(Res)
@@ -93,8 +93,8 @@ rm(Errors,Cert,CEMax,Probs)
 
 # I choose to do this step in R to ensure precision. Highly vectorized
 # operations are not very time consuming in R
-D[,5:15] <- D[,5:15] / snum
-D[,3:4] <- D[,3:4] / cnum
+D[,6:16] <- D[,6:16] / snum
+D[,5] <- D[,5] / cnum
 
 # Add the pattern and parameters to D for clarity
 D$pattern <- apply(patmat,2,toString)
@@ -104,7 +104,7 @@ D$rstd   <- rs
 D$mustd  <- us
 
 # Add column labels
-colnames(D) <- c("EE","PC","WC","WP","E.0", "E.1", "E.2", "E.3", "E.4", "E.5", "E.6", "E.7", "E.8", "E.9", "E.10","Pattern","rm","rs","um","us")
+colnames(D) <- c("EE","PC","LPC","WC","WP","E.0", "E.1", "E.2", "E.3", "E.4", "E.5", "E.6", "E.7", "E.8", "E.9", "E.10","Pattern","rm","rs","um","us")
 
 # Sort by probability, this makes the most sense
 D <- D[order(D$PC, decreasing=T),]
@@ -136,7 +136,8 @@ WW  <- c(M.EE=M.EE,
 
 print(c(WW,rm=rm,rs=rs,um=um,us=us))
 
-#samdat <- "../data/sam-dat/"
-#filename <- paste(samdat,"2Mil.Rda",sep="")
-#save(D,file=filename)
+# Save the final Dataset
+samdat <- "../data/sam-dat/"
+filename <- paste0(samdat,"2.5Mil-EUT.Rda")
+save(D,file=filename)
 

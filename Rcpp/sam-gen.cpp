@@ -18,32 +18,28 @@ NumericVector perH(NumericVector x, NumericVector A0, NumericVector A1, NumericV
 
 	int nn  = A0.size();
 
-	NumericVector ctx(nn) ;
-	NumericVector UA(nn)  ;
-	NumericVector UB(nn)  ;
-	NumericVector UA1(nn) ;
-	NumericVector UB1(nn) ;
+	// Utility Vectors
+	NumericVector ctx(nn),	UA(nn), UB(nn), UA1(nn), UB1(nn);
 
-	NumericVector wA0(nn)  ;
-	NumericVector wA1(nn)  ;
-	NumericVector wB0(nn)  ;
-	NumericVector wB1(nn)  ;
+	// probability vectors
+	NumericVector wA0(nn), wA1(nn), wB0(nn), wB1(nn);
 
-	NumericVector pA(nn)  ;
-	NumericVector pB(nn)  ;
+	// choice probability vectors
+	NumericVector pA(nn), pB(nn);
 
-	NumericVector Aerr(nn);
-	NumericVector Berr(nn);
+	// error number vectors
+	NumericVector Aerr(nn), Berr(nn);
 
+	// Adjusted choice probability for option A
 	NumericVector PA(nn);
 
-	NumericVector N0(nn);
-	NumericVector N1(nn);
+	// Sanity checks
+	NumericVector N0(nn), N1(nn);
 
-	NumericVector CEA(nn) ;
-	NumericVector CEB(nn) ;
-	NumericVector CEM(nn) ;
+	// Certainty Equivalent vectors
+	NumericVector CEA(nn), CEB(nn), CEM(nn) ;
 
+	// Fill everything with 0s
 	ctx.fill(0);
 	UA.fill(0);
 	UB.fill(0);
@@ -74,16 +70,15 @@ NumericVector perH(NumericVector x, NumericVector A0, NumericVector A1, NumericV
 	double mu = x[1];
 
 	if (x.size() == 2) {
-
+		// If EUT model, decision weights are just the probabilities
 		wA1 = pA1 ;
 		wA0 = pA0 ;
 
 		wB1 = pB1 ;
 		wB0 = pB0 ;
-	
 	}
 	else{
-
+		// If RDU model, derrive the decision weights
 		double alpha = x[2];
 		double beta = x[3];
 
@@ -91,27 +86,35 @@ NumericVector perH(NumericVector x, NumericVector A0, NumericVector A1, NumericV
 		wA0 = exp( -1 * beta * pow( -1 * log(pA0 + pA1), alpha) )  - wA1 ;
 		wB1 = exp( -1 * beta * pow( -1 * log(pB1), alpha) ) ;
 		wB0 = exp( -1 * beta * pow( -1 * log(pB0 + pB1), alpha) )  - wB1 ;
-	
 	}
 
+	// Generate the results vector and fill it with a large number
+	// Its 7 times the the size of nn because we're retrieving 7 results per n
 	NumericVector res(nn*7);
 	res.fill(999);
 
+	// Get the contextual utility
 	ctx = crra(max,r) - crra(min,r);
 
+	// Get the utilities
 	UA = (wA0 * crra(A0,r)) + (wA1 * crra(A1,r));
 	UB = (wB0 * crra(B0,r)) + (wB1 * crra(B1,r));
 
+	// Determine if the choice of A or B would be in error
 	Aerr = ifelse(UB > UA,1,0);
 	Berr = ifelse(UA > UB,1,0);
 
+	// Get the certainty equivalents
 	CEA = pow((UA * (1-r)), (1/(1-r)));
 	CEB = pow((UB * (1-r)), (1/(1-r)));
 
+	// Get the maximum certainty equivalent
 	CEM = ifelse(CEA>CEB,CEA,CEB);
 
-	UB1  = (UB/ctx/mu) - (UA/ctx/mu);
+	// Add in contextual utility and fechner terms to the Utility of B and normalize it so that UA is 0
+	UB1  = (UB - UA)/ctx/mu;
 
+	// Get the choice probability of choosing A
 	PA = (1 / (1 + exp(UB1)));
 
 	// Are we dealing with an insane number?
@@ -120,8 +123,8 @@ NumericVector perH(NumericVector x, NumericVector A0, NumericVector A1, NumericV
 	// no, but are we making an insane number via exp?
 	N1 = ifelse( UB1 > 709 , 0 , PA );
 
+	// Get the choice probabilities of A and B
 	pA = ifelse( is_na(UB1) , N0 , N1);
-
 	pB = 1 - pA;
 
 	for(int i = 0 ; i < nn ; i++){
@@ -147,6 +150,7 @@ NumericMatrix getRes(NumericMatrix sim, NumericVector A0, NumericVector A1, Nume
 	NumericMatrix RES((cnum*7),ncol);
 
 
+	// the number of columns in sim is the number of simulated agents
 	for(int i=0;i<ncol;i++){
 		RES(_,i) = perH( sim(_,i), A0, A1, B0, B1, pA0, pA1, pB0, pB1, max, min);
 	}
@@ -229,7 +233,7 @@ NumericMatrix DDcpp(NumericMatrix pat, NumericVector M, NumericMatrix Errors,
 
 		}
 
-		//Set up the Eset
+		//Set up the Error set
 		for(int j = 0 ; j < cnum ; j++){
 			Eset = 0 ;
 
