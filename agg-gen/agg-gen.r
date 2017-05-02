@@ -7,10 +7,7 @@ library(ctools)
 c.library("halton","Rcpp")
 
 # Compile C++ code
-sourceCpp("../Rcpp/sam-gen.cpp")
-
-# Export a function from above to all potential workers.
-c.export("DDcpp")
+c.sourceCpp("../Rcpp/sam-gen.cpp")
 
 small.run <- T
 
@@ -54,27 +51,40 @@ getAgg <- function(theta){
 
 	rm(Res,sim)
 
+	# Returns a dataset with 16 columns.
 	D <- data.frame(DDcpp(pat=patlist, M=M,Errors=Errors,Cert=Cert,CEMax=CEMax,Probs=Probs ))
-	#D <- lapply(patlist,DD, M=M,Errors=Errors,Cert=Cert,CEMax=CEMax,Probs=Probs)
-	#D <- do.call(rbind,D)
 
-	D[,5:15] <- D[,5:15] / snum
+	# The first five are
+	#EE  -  Expected number of errors
+	#PC  -  Simulated probability
+	#LPC -  Log-Simulated probability !! Not the same as log(PC) !!
+	#WC  -  Welfare Surplus metric
+	#WP  -  Welfare proportion metirc
 
-	colnames(D) <- c("EE","PC","WC","WP","E.0", "E.1", "E.2", "E.3", "E.4", "E.5", "E.6", "E.7", "E.8", "E.9", "E.10")
+	# The next 10 are the total number of agents with [0-10] errors, so we need to divide it
+	# by the number of agents we simulated to get the probability of [0-10] errors
+	D[,6:16] <- D[,6:16] / snum
 
-	D[,3:4] <- D[,3:4] / 10
+	colnames(D) <- c("EE","PC","LPC","WC","WP","E.0", "E.1", "E.2", "E.3", "E.4", "E.5", "E.6", "E.7", "E.8", "E.9", "E.10")
 
+	#
+	D[,4:5] <- D[,4:5] / 10
+
+	M.LPC  <- sum(D$PC*D$LPC)
 	M.EE  <- sum(D$PC*D$EE)
 	M.WP  <- sum(D$PC*D$WP)
 	M.WC  <- sum(D$PC*D$WC) 
 	M.WE0 <- sum(D$PC*D$E.0)
 
+	V.LPC  <- sum(D$PC*(D$LPC - M.LPC )^2)
 	V.EE  <- sum(D$PC*(D$EE - M.EE )^2)
 	V.WP  <- sum(D$PC*(D$WP - M.WP )^2)
 	V.WC  <- sum(D$PC*(D$WC - M.WC )^2)
 	V.WE0 <- sum(D$PC*(D$E.0 - M.WE0)^2)
 
-	c(  M.EE=M.EE,
+	c(M.LPC = M.LPC,  
+		V.LPC=V.LPC,
+		M.EE=M.EE,
 		V.EE=V.EE,
 		M.WP=M.WP,
 		V.WP=V.WP,
@@ -111,7 +121,7 @@ Min <- c(rep(0.10,9),2)
 c.export("A0","A1","B0","B1","pA0","pA1","pB0","pB1","Max","Min")
 
 # The number of samples to draw
-S <- ifelse(small.run, 10000, 1000000)
+S <- ifelse(small.run, 1000, 500000)
 
 # Some boundary conditions
 rm.min <- -1.9		# Just below the HL-MPL
@@ -161,12 +171,10 @@ c.export("H1","H2")
 # and fechner values
 
 MM  <- c.lapply( Theta, getAgg)
+#MM  <- lapply( Theta, getAgg)
 MM <- do.call(rbind,MM)
 MM <- data.frame(MM)
 row.names(MM) <- 1:nrow(MM)
-
-plot(MM$rm,MM$M.WP)
-
 
 aggdir <- "../data/agg-dat/"
 fname <- paste(aggdir,"Agg-sim.Rda",sep="")

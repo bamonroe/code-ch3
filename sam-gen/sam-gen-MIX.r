@@ -248,7 +248,7 @@ TopTenMIX <- MIX %>%
 
 subpop <- c(1:10, "PC" , "EE", "WP", "WC", "E.0", "E.1")
 
-for(mod in c("TopTenEUT", "TopTenRDU", "TopTenMIX")){
+for(mod in c("TopTenEUT", "TopTenRDU")){
 	pat <- lapply( 1:10, function(i){
 					get(mod)$Pattern[i]				%>%
 					strsplit( split = c(",")) %>%
@@ -268,4 +268,22 @@ for(mod in c("TopTenEUT", "TopTenRDU", "TopTenMIX")){
 	write.csv(out,file = paste0("../tables/",mod,".csv"), row.names = FALSE, quote = FALSE)
 
 }
+
+pat <- lapply( 1:10, function(i){
+				TopTenMIX$Pattern[i]				%>%
+				strsplit( split = c(",")) %>%
+				do.call(what = c)					%>%
+				trimws()									%>%
+				as.numeric()
+			})
+pat <- do.call(rbind, pat)
+
+out <- TopTenMIX %>%
+					select(-Pattern, -E.1)
+
+out <- cbind(pat, EUT.prop, out)
+
+assign(paste0(mod,".out") , out)
+
+write.csv(out,file = paste0("../tables/",mod,".csv"), row.names = FALSE, quote = FALSE)
 

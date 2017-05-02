@@ -113,8 +113,6 @@ E <- arrange(E,desc(Type),ll)
 # Now to configure the graph aesthetically
 
 # Configure the points
-## Shape of the points
-shape <- 20
 ## Size of the points
 point.size <- 5
 ## alpha
@@ -152,22 +150,24 @@ A.label <- c(A[1]+.2,A[2]-.01)
 B.label <- c(B[1]+.2,B[2]-.01)
 C.label <- c(C[1]+.2,C[2]-.01)
 
-p <- ggplot(data=E, aes_string(x="ll",y="WP"))
-p <- p + annotate("rect", xmin=B[1],xmax=Inf,ymin=-Inf,ymax=B[2],alpha=.2)
-p <- p + geom_point(shape=shape,size=point.size, alpha=alph, aes_string(color="Type") )
+# Have different shapes for the different types
+shapes <- c(19, 15, 2, 25)
+
+p <- ggplot(data=E, aes_string(x="ll", y="WP"))
+p <- p + annotate("rect", xmin=B[1], xmax=Inf, ymin=-Inf, ymax=B[2], alpha=.2)
+p <- p + geom_point(size=point.size, alpha=alph, aes_string(color="Type", shape="Type") )
 p <- p + labs(x="Log of Simulated Likelihood",y="Expected Ratio of Obtained to Optimal Welfare")
 p <- p + theme( axis.title.x=element_text(size=x.title.size),
-				axis.text.x=element_text(size=x.text.size,angle=x.text.angle),
-				axis.title.y=element_text(size=y.title.size,hjust=y.title.hjust,vjust=y.title.vjust),
-				axis.text.y=element_text(size=y.text.size,angle=y.text.angle)
+				axis.text.x=element_text(size=x.text.size, angle=x.text.angle),
+				axis.title.y=element_text(size=y.title.size, hjust=y.title.hjust, vjust=y.title.vjust),
+				axis.text.y=element_text(size=y.text.size, angle=y.text.angle)
 				)
-p <- p + annotate("text", x=A.label[1],y=A.label[2], label="X")
-p <- p + annotate("text", x=B.label[1],y=B.label[2], label="Y")
-p <- p + annotate("text", x=C.label[1],y=C.label[2], label="Z")
+p <- p + annotate("text", x=A.label[1], y=A.label[2], label="X")
+p <- p + annotate("text", x=B.label[1], y=B.label[2], label="Y")
+p <- p + annotate("text", x=C.label[1], y=C.label[2], label="Z")
+p <- p + scale_shape_manual(values = shapes)
 
 p
-
-#stop("here")
 
 # Configurations for saving the file
 ## Width of the plot
@@ -177,9 +177,12 @@ h <- 5		# About half a page
 ## Scale of the plot
 save.scale <- 1.5
 
-dir <- "../data/sam-plots/"
-file <- "Figure1.jpg"
+#dir <- "../data/sam-plots/"
+#file  <- "Figure1.jpg"
+#fname <- paste(dir,file,sep="")
+#ggsave(filename=fname, plot=p, width=w, height=h, units="in",scale=save.scale )
+
+dir <- "~/Dropbox/Thesis/Chapter 3/Plots/SamPlots/"
+file <- "EUT-ConFOSD.jpg"
 fname <- paste(dir,file,sep="")
-
 ggsave(filename=fname, plot=p, width=w, height=h, units="in",scale=save.scale )
-
